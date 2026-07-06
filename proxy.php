@@ -52,6 +52,37 @@ if (isset($_GET['feed'])) {
     exit;
 }
 
+// ---- זיהוי שורטס ----
+// proxy.php?shorts=id1,id2,...  ->  {"id1":true,"id2":false}
+// שורט: /shorts/{id} מחזיר 200. סרטון רגיל: הפניה (3xx) ל-watch.
+if (isset($_GET['shorts'])) {
+    $ids = array_slice(array_filter(array_map('trim', explode(',', $_GET['shorts'])), function ($id) {
+        return preg_match('/^[\w-]{11}$/', $id);
+    }), 0, 30);
+    if (!$ids) fail('bad video ids');
+    $out = [];
+    foreach ($ids as $id) {
+        $ch = curl_init('https://www.youtube.com/shorts/' . $id);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_NOBODY => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        ]);
+        curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($code === 200) $out[$id] = true;
+        elseif ($code >= 300 && $code < 400) $out[$id] = false;
+        else $out[$id] = null; // לא ידוע — הצד השני לא יסנן
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($out);
+    exit;
+}
+
 // ---- Resolve handle -> channelId ----
 if (isset($_GET['resolve'])) {
     $q = trim($_GET['resolve']);

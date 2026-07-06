@@ -22,10 +22,10 @@
     toastTimer = setTimeout(() => { el.hidden = true; }, 3200);
   }
 
-  // ---- שעון ----
+  // ---- שעון (שעון ישראל) ----
   function tickClock() {
-    const d = new Date();
-    $('clock').textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const t = Engine.ilTime();
+    $('clock').textContent = String(t.h).padStart(2, '0') + ':' + String(t.m).padStart(2, '0');
   }
   setInterval(tickClock, 1000);
   tickClock();
@@ -209,6 +209,8 @@
     $('setNews').checked = s.newsEnabled;
     $('setTalkMin').value = s.talkMinutes;
     $('setNewsMin').value = s.newsMinutes;
+    $('setSkipShorts').checked = s.skipShorts;
+    $('setTransition').checked = s.transitionSound;
     renderAccount();
   }
 
@@ -216,6 +218,8 @@
   $('setNews').onchange = (e) => Store.setSetting('newsEnabled', e.target.checked);
   $('setTalkMin').onchange = (e) => Store.setSetting('talkMinutes', Math.max(3, Math.min(60, +e.target.value || 15)));
   $('setNewsMin').onchange = (e) => Store.setSetting('newsMinutes', Math.max(1, Math.min(60, +e.target.value || 5)));
+  $('setSkipShorts').onchange = (e) => Store.setSetting('skipShorts', e.target.checked);
+  $('setTransition').onchange = (e) => Store.setSetting('transitionSound', e.target.checked);
 
   // ---- חשבון ----
   function renderAccount() {
@@ -284,6 +288,29 @@
   $('btnSongNow').onclick = () => Engine.songNow();
   $('btnTalkNow').onclick = () => Engine.talkNow();
   $('btnNewsNow').onclick = () => Engine.newsNow();
+
+  // ---- מצב תצוגת וידאו: רגיל ← קטן ← האזנה בלבד ----
+  const VIDEO_MODES = [
+    { id: 'normal', label: '📺 וידאו' },
+    { id: 'mini', label: '🔲 וידאו קטן' },
+    { id: 'audio', label: '🎧 האזנה בלבד' },
+  ];
+  function applyVideoMode() {
+    const mode = Store.data.settings.videoMode || 'normal';
+    const wrap = $('playerWrap');
+    wrap.classList.toggle('mode-mini', mode === 'mini');
+    wrap.classList.toggle('mode-audio', mode === 'audio');
+    $('audioNote').hidden = mode !== 'audio';
+    $('btnVideoMode').textContent = VIDEO_MODES.find(m => m.id === mode).label;
+    if (mode !== 'normal') YTBridge.lowQuality();
+  }
+  $('btnVideoMode').onclick = () => {
+    const cur = Store.data.settings.videoMode || 'normal';
+    const next = VIDEO_MODES[(VIDEO_MODES.findIndex(m => m.id === cur) + 1) % VIDEO_MODES.length].id;
+    Store.setSetting('videoMode', next);
+    applyVideoMode();
+  };
+  applyVideoMode();
 
   // ---- רענון כללי כשמשהו משתנה ----
   Store.subscribe(() => {

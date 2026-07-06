@@ -70,6 +70,30 @@
     return out;
   }
 
+  // ---- זיהוי שורטס ----
+  // סרטון הוא "שורט" אם youtube.com/shorts/{id} מחזיר 200 (אחרת יש הפניה ל-watch).
+  // הבדיקה נעשית פעם אחת לכל סרטון דרך הפרוקסי ונשמרת לתמיד.
+  const SHORTS_KEY = 'radioli-shorts-v1';
+  let shortsCache = {};
+  try { shortsCache = JSON.parse(localStorage.getItem(SHORTS_KEY)) || {}; } catch (e) {}
+
+  async function classifyShorts(videoIds) {
+    const unknown = videoIds.filter(id => !(id in shortsCache)).slice(0, 30);
+    if (unknown.length) {
+      try {
+        const res = await proxyGet({ shorts: unknown.join(',') });
+        const json = await res.json();
+        let changed = false;
+        Object.entries(json).forEach(([id, val]) => {
+          if (val === true || val === false) { shortsCache[id] = val; changed = true; }
+        });
+        if (changed) localStorage.setItem(SHORTS_KEY, JSON.stringify(shortsCache));
+      } catch (e) { console.warn('shorts check failed', e); }
+    }
+  }
+
+  function isShort(videoId) { return shortsCache[videoId] === true; }
+
   // ---- נגן יוטיוב ----
   let player = null;
   let playerReadyResolve;
@@ -107,6 +131,8 @@
     parseInput,
     resolveHandle,
     fetchFeed,
+    classifyShorts,
+    isShort,
     loadPlayer,
     get player() { return player; },
     onState(fn) { stateHandler = fn; },
@@ -119,6 +145,10 @@
     stop() { if (player && player.stopVideo) player.stopVideo(); },
     mute() { if (player && player.mute) player.mute(); },
     unMute() { if (player && player.unMute) player.unMute(); },
+    lowQuality() {
+      // רמז ליוטיוב להוריד איכות במצב האזנה (חוסך נתונים כשזה מכובד)
+      try { if (player && player.setPlaybackQuality) player.setPlaybackQuality('small'); } catch (e) {}
+    },
     currentTime() {
       try { return player && player.getCurrentTime ? player.getCurrentTime() : 0; }
       catch (e) { return 0; }

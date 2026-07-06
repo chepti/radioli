@@ -41,17 +41,30 @@
     if (Engine.recent.length > 25) Engine.recent.shift();
   }
 
+  // ---- שעון ישראל ----
+  // תמיד לפי Asia/Jerusalem, לא לפי שעון המכשיר — גם בחו"ל הרדיו בשעון ישראל.
+  const IL_FMT = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem', hour: 'numeric', minute: 'numeric', hourCycle: 'h23',
+  });
+  function ilTime() {
+    const parts = IL_FMT.formatToParts(new Date());
+    const get = (t) => +parts.find(p => p.type === t).value;
+    return { h: get('hour') % 24, m: get('minute') };
+  }
+  Engine.ilTime = ilTime;
+
   // ---- כרוזת שעה ----
   const HOUR_WORDS = ['שתים עשרה', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר', 'אחת עשרה'];
 
-  function timePhrase(d) {
-    const h = HOUR_WORDS[d.getHours() % 12];
-    const m = d.getMinutes();
+  function timePhrase() {
+    const t = ilTime();
+    const h = HOUR_WORDS[t.h % 12];
+    const m = t.m;
     let suffix = '';
     if (m === 0) suffix = ' בדיוק';
     else if (m === 30) suffix = ' וחצי';
     else suffix = ' ו־' + m + ' דקות';
-    const part = d.getHours() < 5 ? 'בלילה' : d.getHours() < 12 ? 'בבוקר' : d.getHours() < 17 ? 'אחר הצהריים' : d.getHours() < 21 ? 'בערב' : 'בלילה';
+    const part = t.h < 5 ? 'בלילה' : t.h < 12 ? 'בבוקר' : t.h < 17 ? 'אחר הצהריים' : t.h < 21 ? 'בערב' : 'בלילה';
     return 'כאן רדיולי. השעה ' + h + suffix + ' ' + part + '.';
   }
 
@@ -77,11 +90,31 @@
     });
   }
 
+  // צליל מעבר עדין בין סרטונים (שני תווים רכים)
+  function softChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [659.25, 987.77].forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.frequency.value = f;
+        o.type = 'sine';
+        g.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.22);
+        g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + i * 0.22 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.22 + 0.8);
+        o.connect(g).connect(ctx.destination);
+        o.start(ctx.currentTime + i * 0.22);
+        o.stop(ctx.currentTime + i * 0.22 + 0.9);
+      });
+      setTimeout(() => ctx.close(), 1400);
+    } catch (e) {}
+  }
+
   function speakTime() {
     return new Promise(async (resolve) => {
       await chime();
       if (!('speechSynthesis' in window)) return resolve();
-      const text = timePhrase(new Date());
+      const text = timePhrase();
       const utter = new SpeechSynthesisUtterance(text);
       const voices = speechSynthesis.getVoices();
       const heVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('he'))
@@ -111,7 +144,13 @@
         return [];
       }
     }));
-    return pools.flat();
+    let all = pools.flat();
+    if (Store.data.settings.skipShorts && all.length) {
+      await YTBridge.classifyShorts(all.map(v => v.videoId));
+      const filtered = all.filter(v => !YTBridge.isShort(v.videoId));
+      if (filtered.length) all = filtered; // אם הכול שורטס — עדיף שורט משתיקה
+    }
+    return all;
   }
 
   function pickRandom(pool) {
@@ -124,8 +163,10 @@
   function playVideo(v, startSeconds) {
     rememberRecent(v.videoId);
     setTrack(v);
+    if (Store.data.settings.transitionSound) softChime();
     YTBridge.play(v.videoId, startSeconds);
     YTBridge.unMute();
+    if (Store.data.settings.videoMode !== 'normal') YTBridge.lowQuality();
   }
 
   function saveTalkPosition() {
@@ -195,7 +236,7 @@
   }
 
   async function hourlyBreak() {
-    Engine.lastBreakHour = new Date().getHours();
+    Engine.lastBreakHour = ilTime().h;
     saveTalkPosition();
     const s = Store.data.settings;
     if (s.announceHour) {
@@ -215,10 +256,10 @@
   // ---- טיק ----
   function tick() {
     if (!Engine.on) return;
-    const now = new Date();
+    const now = ilTime();
 
-    // שעה עגולה חדשה?
-    if (now.getMinutes() === 0 && now.getHours() !== Engine.lastBreakHour
+    // שעה עגולה חדשה? (לפי שעון ישראל)
+    if (now.m === 0 && now.h !== Engine.lastBreakHour
       && (Engine.phase === 'talk' || Engine.phase === 'song')) {
       hourlyBreak();
       return;
@@ -273,7 +314,7 @@
       return;
     }
     Engine.on = true;
-    Engine.lastBreakHour = new Date().getHours();
+    Engine.lastBreakHour = ilTime().h;
     await YTBridge.loadPlayer();
     YTBridge.onState(onPlayerState);
     Engine.tickTimer = setInterval(tick, 1000);
@@ -287,9 +328,9 @@
       await speakTime();
       if (!Engine.on) return;
     }
-    const m = new Date().getMinutes();
+    const m = ilTime().m;
     if (Store.data.settings.newsEnabled && m < 7 && Store.channelsFor('news').length) {
-      Engine.lastBreakHour = new Date().getHours();
+      Engine.lastBreakHour = ilTime().h;
       await startNews();
     } else {
       await startTalk(false);

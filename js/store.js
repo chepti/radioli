@@ -14,6 +14,9 @@
       newsEnabled: true,
       talkMinutes: 15,
       newsMinutes: 5,
+      skipShorts: true,
+      transitionSound: true,
+      videoMode: 'normal', // normal | mini | audio
     },
     activeMood: null, // null = הכול
   };

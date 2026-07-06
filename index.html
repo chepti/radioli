@@ -109,6 +109,14 @@
           <span>אורך חדשות מקסימלי (דקות)</span>
           <input type="number" id="setNewsMin" min="1" max="60" step="1">
         </label>
+        <label class="setting-row">
+          <span>לדלג על שורטס (סרטונים קצרצרים)</span>
+          <input type="checkbox" id="setSkipShorts">
+        </label>
+        <label class="setting-row">
+          <span>צליל נעים במעבר בין סרטונים</span>
+          <input type="checkbox" id="setTransition">
+        </label>
       </div>
     </section>
 
@@ -149,7 +157,9 @@
         <div id="ytPlayer"></div>
         <div class="player-cover" id="playerCover">📻</div>
       </div>
+      <div class="audio-note" id="audioNote" hidden>🎧 מצב האזנה בלבד — הווידאו מוסתר</div>
       <div class="quick-actions">
+        <button class="btn small" id="btnVideoMode" title="גודל תצוגת וידאו">📺 וידאו</button>
         <button class="btn small" id="btnSongNow">🎵 שיר עכשיו</button>
         <button class="btn small" id="btnTalkNow">🗣️ דיבורים</button>
         <button class="btn small" id="btnNewsNow">📰 חדשות</button>
