@@ -5,7 +5,7 @@
 
   const PHASE_LABELS = {
     off: { text: 'כבוי', cls: '' },
-    announce: { text: '🕰️ כרוזת שעה', cls: 'live' },
+    announce: { text: '🕰️ הכרזת שעה', cls: 'live' },
     news: { text: '📰 חדשות', cls: 'news' },
     talk: { text: '🗣️ דיבורים', cls: 'live' },
     song: { text: '🎵 שיר', cls: 'live' },
@@ -224,7 +224,8 @@
     $('setTalkMin').value = s.talkMinutes;
     $('setNewsMin').value = s.newsMinutes;
     $('setSkipShorts').checked = s.skipShorts;
-    $('setTransition').checked = s.transitionSound;
+    $('setAnnounceSound').value = s.announceSound;
+    $('setTransSound').value = s.transitionSoundName;
   }
 
   $('setAnnounce').onchange = (e) => Store.setSetting('announceHour', e.target.checked);
@@ -232,7 +233,10 @@
   $('setTalkMin').onchange = (e) => Store.setSetting('talkMinutes', Math.max(3, Math.min(60, +e.target.value || 15)));
   $('setNewsMin').onchange = (e) => Store.setSetting('newsMinutes', Math.max(1, Math.min(60, +e.target.value || 5)));
   $('setSkipShorts').onchange = (e) => Store.setSetting('skipShorts', e.target.checked);
-  $('setTransition').onchange = (e) => Store.setSetting('transitionSound', e.target.checked);
+  $('setAnnounceSound').onchange = (e) => Store.setSetting('announceSound', e.target.value);
+  $('setTransSound').onchange = (e) => Store.setSetting('transitionSoundName', e.target.value);
+  $('prevAnnounceSound').onclick = () => Engine.previewSound($('setAnnounceSound').value);
+  $('prevTransSound').onclick = () => Engine.previewSound($('setTransSound').value);
 
   // ---- חשבון: רק דרך הכפתור בפינה ----
   function renderAccount() {

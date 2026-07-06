@@ -102,7 +102,7 @@
       <div class="card-head"><h2><svg class="ic ic-head"><use href="#i-clock"/></svg> לוח השידורים</h2></div>
       <div class="settings-grid">
         <label class="setting-row">
-          <span>כרוזת שעה בשעה עגולה</span>
+          <span>הכרזת שעה בשעה עגולה</span>
           <input type="checkbox" id="setAnnounce">
         </label>
         <label class="setting-row">
@@ -121,10 +121,32 @@
           <span>לדלג על שורטס (סרטונים קצרצרים)</span>
           <input type="checkbox" id="setSkipShorts">
         </label>
-        <label class="setting-row">
-          <span>צליל נעים במעבר בין סרטונים</span>
-          <input type="checkbox" id="setTransition">
-        </label>
+        <div class="setting-row">
+          <span>צליל הכרזת שעה</span>
+          <span class="sound-pick">
+            <select id="setAnnounceSound">
+              <option value="bells">🔔 פעמונים</option>
+              <option value="harp">🎼 נבל</option>
+              <option value="marimba">🎹 מרימבה</option>
+              <option value="soft">🌙 רך ועדין</option>
+              <option value="none">🔕 בלי צליל</option>
+            </select>
+            <button type="button" class="btn small" id="prevAnnounceSound" title="השמעה">🔊</button>
+          </span>
+        </div>
+        <div class="setting-row">
+          <span>צליל מעבר בין קטעים</span>
+          <span class="sound-pick">
+            <select id="setTransSound">
+              <option value="soft">🌙 רך ועדין</option>
+              <option value="bells">🔔 פעמונים</option>
+              <option value="harp">🎼 נבל</option>
+              <option value="marimba">🎹 מרימבה</option>
+              <option value="none">🔕 בלי צליל</option>
+            </select>
+            <button type="button" class="btn small" id="prevTransSound" title="השמעה">🔊</button>
+          </span>
+        </div>
       </div>
     </section>
 

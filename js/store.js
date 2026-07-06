@@ -15,7 +15,8 @@
       talkMinutes: 15,
       newsMinutes: 5,
       skipShorts: true,
-      transitionSound: true,
+      announceSound: 'bells',   // פעמונים | נבל | מרימבה | רך | בלי
+      transitionSoundName: 'soft',
       videoMode: 'normal', // normal | mini | audio
     },
     activeMood: null, // null = הכול
@@ -30,9 +31,14 @@
       const raw = localStorage.getItem(LS_KEY);
       if (!raw) return structuredClone(DEFAULT_DATA);
       const parsed = JSON.parse(raw);
-      return Object.assign(structuredClone(DEFAULT_DATA), parsed, {
+      const merged = Object.assign(structuredClone(DEFAULT_DATA), parsed, {
         settings: Object.assign({}, DEFAULT_DATA.settings, parsed.settings || {}),
       });
+      // מעבר מגרסה ישנה: המתג "צליל מעבר" הפך לבחירת צליל
+      if (parsed.settings && parsed.settings.transitionSound === false && !parsed.settings.transitionSoundName) {
+        merged.settings.transitionSoundName = 'none';
+      }
+      return merged;
     } catch (e) {
       console.warn('radioli: load failed', e);
       return structuredClone(DEFAULT_DATA);

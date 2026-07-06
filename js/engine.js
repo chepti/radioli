@@ -1,6 +1,7 @@
 // ===== רדיולי — מנוע הרדיו: כרוזת שעה, חדשות, דיבורים, שירים =====
 (function () {
   const POS_KEY = 'radioli-positions-v1';
+  const BLOCKED_KEY = 'radioli-blocked-v1';
 
   const Engine = {
     on: false,
@@ -12,6 +13,8 @@
     lastBreakHour: -1,
     recent: [],
     positions: loadPositions(),
+    blocked: loadBlocked(),
+    errorStreak: 0,
     tickTimer: null,
     ui: { onPhase() {}, onTrack() {}, onStatus() {} },
   };
@@ -22,6 +25,17 @@
   }
   function savePositions() {
     localStorage.setItem(POS_KEY, JSON.stringify(Engine.positions));
+  }
+
+  // סרטונים שאי אפשר לנגן מחוץ ליוטיוב (שגיאה 150/101) — נחסמים לתמיד
+  function loadBlocked() {
+    try { return JSON.parse(localStorage.getItem(BLOCKED_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function blockVideo(videoId) {
+    if (!videoId) return;
+    Engine.blocked[videoId] = true;
+    localStorage.setItem(BLOCKED_KEY, JSON.stringify(Engine.blocked));
   }
 
   function status(msg) { Engine.ui.onStatus(msg || ''); }
@@ -53,8 +67,20 @@
   }
   Engine.ilTime = ilTime;
 
-  // ---- כרוזת שעה ----
+  // ---- הכרזת שעה ----
   const HOUR_WORDS = ['שתים עשרה', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע', 'עשר', 'אחת עשרה'];
+  const UNIT_WORDS = ['', 'אחת', 'שתיים', 'שלוש', 'ארבע', 'חמש', 'שש', 'שבע', 'שמונה', 'תשע'];
+  const TEEN_WORDS = ['עשר', 'אחת עשרה', 'שתים עשרה', 'שלוש עשרה', 'ארבע עשרה', 'חמש עשרה', 'שש עשרה', 'שבע עשרה', 'שמונה עשרה', 'תשע עשרה'];
+  const TENS_WORDS = { 20: 'עשרים', 30: 'שלושים', 40: 'ארבעים', 50: 'חמישים' };
+
+  // מספר דקות במילים (נקבה): 22 -> "עשרים ושתיים"
+  function minutesWords(m) {
+    if (m < 10) return UNIT_WORDS[m];
+    if (m < 20) return TEEN_WORDS[m - 10];
+    const tens = Math.floor(m / 10) * 10;
+    const unit = m % 10;
+    return TENS_WORDS[tens] + (unit ? ' ו' + UNIT_WORDS[unit] : '');
+  }
 
   function timePhrase() {
     const t = ilTime();
@@ -62,66 +88,88 @@
     const m = t.m;
     let suffix = '';
     if (m === 0) suffix = ' בדיוק';
+    else if (m === 15) suffix = ' ורבע';
     else if (m === 30) suffix = ' וחצי';
-    else suffix = ' ו־' + m + ' דקות';
+    else if (m === 1) suffix = ' ודקה';
+    else if (m === 2) suffix = ' ושתי דקות';
+    else suffix = ' ו' + minutesWords(m) + ' דקות';
     const part = t.h < 5 ? 'בלילה' : t.h < 12 ? 'בבוקר' : t.h < 17 ? 'אחר הצהריים' : t.h < 21 ? 'בערב' : 'בלילה';
     return 'כאן רדיולי. השעה ' + h + suffix + ' ' + part + '.';
   }
 
-  function chime() {
+  // ---- ערכות צלילים ----
+  const SOUND_THEMES = {
+    bells:   { wave: 'sine',     notes: [523.25, 659.25, 783.99],        gap: 0.35, len: 0.6,  gain: 0.25 },
+    harp:    { wave: 'triangle', notes: [392, 523.25, 659.25, 783.99],   gap: 0.16, len: 0.9,  gain: 0.18 },
+    marimba: { wave: 'sine',     notes: [880, 659.25, 523.25, 659.25],   gap: 0.2,  len: 0.3,  gain: 0.22 },
+    soft:    { wave: 'sine',     notes: [659.25, 987.77],                gap: 0.22, len: 0.8,  gain: 0.13 },
+  };
+
+  function playTheme(name, quiet) {
+    const th = SOUND_THEMES[name];
+    if (!th) return Promise.resolve(); // 'none' או לא מוכר
     return new Promise(resolve => {
       try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const notes = [523.25, 659.25, 783.99];
-        notes.forEach((f, i) => {
+        const gain = th.gain * (quiet ? 0.6 : 1);
+        th.notes.forEach((f, i) => {
           const o = ctx.createOscillator();
           const g = ctx.createGain();
           o.frequency.value = f;
-          o.type = 'sine';
-          g.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.35);
-          g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + i * 0.35 + 0.05);
-          g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.35 + 0.6);
+          o.type = th.wave;
+          const t0 = ctx.currentTime + i * th.gap;
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(gain, t0 + 0.04);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + th.len);
           o.connect(g).connect(ctx.destination);
-          o.start(ctx.currentTime + i * 0.35);
-          o.stop(ctx.currentTime + i * 0.35 + 0.7);
+          o.start(t0);
+          o.stop(t0 + th.len + 0.1);
         });
-        setTimeout(() => { ctx.close(); resolve(); }, 1600);
+        const total = (th.notes.length - 1) * th.gap + th.len;
+        setTimeout(() => { ctx.close(); resolve(); }, total * 1000 + 250);
       } catch (e) { resolve(); }
     });
   }
 
-  // צליל מעבר עדין בין סרטונים (שני תווים רכים)
+  function chime() {
+    return playTheme(Store.data.settings.announceSound);
+  }
+
+  // צליל מעבר עדין בין סרטונים
   function softChime() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [659.25, 987.77].forEach((f, i) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.frequency.value = f;
-        o.type = 'sine';
-        g.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.22);
-        g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + i * 0.22 + 0.04);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i * 0.22 + 0.8);
-        o.connect(g).connect(ctx.destination);
-        o.start(ctx.currentTime + i * 0.22);
-        o.stop(ctx.currentTime + i * 0.22 + 0.9);
-      });
-      setTimeout(() => ctx.close(), 1400);
-    } catch (e) {}
+    playTheme(Store.data.settings.transitionSoundName, true);
+  }
+
+  // המתנה לטעינת רשימת הקולות (בחלק מהדפדפנים היא נטענת באיחור)
+  function getVoicesAsync() {
+    return new Promise(resolve => {
+      let vs = speechSynthesis.getVoices();
+      if (vs.length) return resolve(vs);
+      const done = () => resolve(speechSynthesis.getVoices());
+      speechSynthesis.addEventListener('voiceschanged', done, { once: true });
+      setTimeout(done, 1500);
+    });
+  }
+
+  function pickHebrewVoice(voices) {
+    return voices.find(v => /^he[-_]/i.test(v.lang) || v.lang === 'he')
+      || voices.find(v => /hebrew|עברית|ivrit/i.test(v.name || ''))
+      || null;
   }
 
   function speakTime() {
     return new Promise(async (resolve) => {
       await chime();
       if (!('speechSynthesis' in window)) return resolve();
-      const text = timePhrase();
-      const utter = new SpeechSynthesisUtterance(text);
-      const voices = speechSynthesis.getVoices();
-      const heVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('he'))
-        || voices.find(v => /hebrew|ivrit/i.test(v.name || ''));
-      if (heVoice) utter.voice = heVoice;
-      utter.lang = 'he-IL';
-      utter.rate = 0.95;
+      const voices = await getVoicesAsync();
+      const heVoice = pickHebrewVoice(voices);
+      // אין קול עברי במכשיר — עדיף רק צליל מאשר הקראה מעוותת בקול לועזי
+      if (!heVoice) return resolve();
+      const utter = new SpeechSynthesisUtterance(timePhrase());
+      utter.voice = heVoice;
+      utter.lang = heVoice.lang || 'he-IL';
+      utter.rate = 1;
+      utter.pitch = 1;
       let done = false;
       const finish = () => { if (!done) { done = true; resolve(); } };
       utter.onend = finish;
@@ -144,7 +192,7 @@
         return [];
       }
     }));
-    let all = pools.flat();
+    let all = pools.flat().filter(v => !Engine.blocked[v.videoId]);
     if (Store.data.settings.skipShorts && all.length) {
       await YTBridge.classifyShorts(all.map(v => v.videoId));
       const filtered = all.filter(v => !YTBridge.isShort(v.videoId));
@@ -168,7 +216,7 @@
   function playVideo(v, startSeconds) {
     rememberRecent(v.videoId);
     setTrack(v);
-    if (Store.data.settings.transitionSound) softChime();
+    softChime(); // מנגן רק אם נבחר צליל
     YTBridge.play(v.videoId, startSeconds);
     YTBridge.unMute();
     if (Store.data.settings.videoMode !== 'normal') YTBridge.lowQuality();
@@ -248,7 +296,7 @@
     const s = Store.data.settings;
     if (s.announceHour) {
       setPhase('announce');
-      status('כרוזת שעה 🕰️');
+      status('הכרזת שעה 🕰️');
       YTBridge.pause();
       await speakTime();
     }
@@ -293,9 +341,21 @@
   function onPlayerState(e) {
     if (!Engine.on) return;
     if (e.data === 'error') {
-      status('סרטון לא זמין, ממשיכים הלאה…');
-      setTimeout(() => skip(), 1200);
+      // שגיאה 150/101 = בעל הערוץ חוסם ניגון מחוץ ליוטיוב. חוסמים את הסרטון לתמיד וממשיכים.
+      if (Engine.current) blockVideo(Engine.current.videoId);
+      Engine.errorStreak++;
+      if (Engine.errorStreak >= 8) {
+        status('לא הצלחתי לנגן — נראה שהערוצים האלה חוסמים ניגון מחוץ ליוטיוב 😢 נסי ערוצים אחרים');
+        powerOff(true);
+        return;
+      }
+      status('הסרטון חסום לניגון מחוץ ליוטיוב, מדלגת… ⏭');
+      setTimeout(() => skip(), 1500);
       return;
+    }
+    if (e.data === YT.PlayerState.PLAYING) {
+      Engine.errorStreak = 0;
+      status('');
     }
     if (e.data === YT.PlayerState.ENDED) {
       if (Engine.phase === 'song') {
@@ -344,7 +404,7 @@
     }
   }
 
-  function powerOff() {
+  function powerOff(keepStatus) {
     Engine.on = false;
     saveTalkPosition();
     clearInterval(Engine.tickTimer);
@@ -352,7 +412,7 @@
     YTBridge.stop();
     setPhase('off');
     setTrack(null);
-    status('');
+    if (!keepStatus) status('');
   }
 
   function skip() {
@@ -383,4 +443,5 @@
   Engine.talkNow = () => { if (Engine.on) { saveTalkPosition(); startTalk(false); } };
   Engine.newsNow = () => { if (Engine.on) startNews(); };
   Engine.onMoodChanged = onMoodChanged;
+  Engine.previewSound = (name) => playTheme(name);
 })();
