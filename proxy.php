@@ -62,21 +62,23 @@ if (isset($_GET['shorts'])) {
     if (!$ids) fail('bad video ids');
     $out = [];
     foreach ($ids as $id) {
+        // בכוונה בלי User-Agent של דפדפן: עם UA של דפדפן יוטיוב מפנה לדף
+        // אישור עוגיות (consent) מהשרת באירופה, וזה מקלקל את הזיהוי.
         $ch = curl_init('https://www.youtube.com/shorts/' . $id);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_NOBODY => true,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_TIMEOUT => 8,
-            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
             CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
         ]);
         curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $redir = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
         curl_close($ch);
         if ($code === 200) $out[$id] = true;
-        elseif ($code >= 300 && $code < 400) $out[$id] = false;
-        else $out[$id] = null; // לא ידוע — הצד השני לא יסנן
+        elseif ($code >= 300 && $code < 400 && strpos($redir, '/watch') !== false) $out[$id] = false;
+        else $out[$id] = null; // לא ידוע (למשל הפניית consent) — הצד השני לא יסנן
     }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($out);

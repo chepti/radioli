@@ -73,7 +73,7 @@
   // ---- זיהוי שורטס ----
   // סרטון הוא "שורט" אם youtube.com/shorts/{id} מחזיר 200 (אחרת יש הפניה ל-watch).
   // הבדיקה נעשית פעם אחת לכל סרטון דרך הפרוקסי ונשמרת לתמיד.
-  const SHORTS_KEY = 'radioli-shorts-v1';
+  const SHORTS_KEY = 'radioli-shorts-v2';
   let shortsCache = {};
   try { shortsCache = JSON.parse(localStorage.getItem(SHORTS_KEY)) || {}; } catch (e) {}
 
