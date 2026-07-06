@@ -1,21 +1,15 @@
 // ===== רדיולי — קונפיגורציה =====
 
-// כדי להפעיל התחברות עם Google וסנכרון בין מכשירים:
-// 1. יוצרים פרויקט ב-https://console.firebase.google.com
-// 2. מפעילים Authentication → Google, ו-Firestore Database
-// 3. מדביקים כאן את האובייקט firebaseConfig מהגדרות הפרויקט
-// כל עוד הערך הוא null — האפליקציה עובדת במצב מקומי (localStorage) בלי חשבון.
-window.RADIOLI_FIREBASE_CONFIG = null;
-/* דוגמה:
+// קונפיגורציית Firebase — התחברות עם Google וסנכרון בין מכשירים.
 window.RADIOLI_FIREBASE_CONFIG = {
-  apiKey: "...",
-  authDomain: "radioli-xxxx.firebaseapp.com",
-  projectId: "radioli-xxxx",
-  storageBucket: "radioli-xxxx.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
+  apiKey: "AIzaSyDtMpIKu8QN28KFLQq0y8N2TbFHCVYVF-Q",
+  authDomain: "radioli-f7442.firebaseapp.com",
+  projectId: "radioli-f7442",
+  storageBucket: "radioli-f7442.firebasestorage.app",
+  messagingSenderId: "559246353514",
+  appId: "1:559246353514:web:ad9fd2a0439e38775a5613",
+  measurementId: "G-07ZFH1YH4B"
 };
-*/
 
 // כתובת הפרוקסי שמביא נתוני ערוצים מיוטיוב (RSS). יחסי לאתר.
 window.RADIOLI_PROXY = 'proxy.php';
