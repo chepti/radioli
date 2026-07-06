@@ -1,6 +1,7 @@
 // ===== רדיולי — ממשק =====
 (function () {
   const $ = (id) => document.getElementById(id);
+  const icon = (name, cls) => '<svg class="ic ' + (cls || '') + '"><use href="#i-' + name + '"/></svg>';
 
   const PHASE_LABELS = {
     off: { text: 'כבוי', cls: '' },
@@ -30,6 +31,21 @@
   setInterval(tickClock, 1000);
   tickClock();
 
+  // ---- אנימציית הרדיו בחוגה ----
+  if (window.lottie) {
+    try {
+      lottie.loadAnimation({
+        container: $('dialAnim'),
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: 'RADIOANIM.json',
+      });
+    } catch (e) { console.warn('lottie failed', e); $('dialAnim').textContent = '📻'; }
+  } else {
+    $('dialAnim').textContent = '📻';
+  }
+
   // ---- מעבר מסכים ----
   function showView(name) {
     $('viewRadio').hidden = name !== 'radio';
@@ -38,8 +54,6 @@
   }
   $('btnSettings').onclick = () => { showView('settings'); renderSettings(); };
   $('btnBackToRadio').onclick = () => showView('radio');
-  $('btnGoAddChannels').onclick = () => { showView('settings'); renderSettings(); $('channelInput').focus(); };
-  $('btnAccount').onclick = () => { showView('settings'); renderSettings(); $('accountBox').scrollIntoView({ behavior: 'smooth' }); };
 
   // ---- וילון הנגן ----
   const sheet = $('playerSheet');
@@ -49,37 +63,38 @@
     sheet.classList.toggle('collapsed');
   });
 
-  // ---- מצבי רוח ----
-  function renderMoodBar() {
-    const bar = $('moodBar');
-    bar.innerHTML = '';
-    const all = document.createElement('button');
-    all.className = 'mood-chip' + (Store.data.activeMood ? '' : ' active');
-    all.textContent = '🎧 הכול';
-    all.onclick = () => { Store.setActiveMood(null); Engine.onMoodChanged(); };
-    bar.appendChild(all);
-    Store.data.moods.forEach(m => {
+  // ---- מצבי רוח (בפס העליון וגם בתוך הנגן) ----
+  function renderMoodChips(container, small) {
+    container.innerHTML = '';
+    const mkChip = (label, active, onClick) => {
       const b = document.createElement('button');
-      b.className = 'mood-chip' + (Store.data.activeMood === m.id ? ' active' : '');
-      b.textContent = m.emoji + ' ' + m.name;
-      b.onclick = () => { Store.setActiveMood(m.id); Engine.onMoodChanged(); toast('עברנו למצב רוח: ' + m.emoji + ' ' + m.name); };
-      bar.appendChild(b);
+      b.className = 'mood-chip' + (active ? ' active' : '');
+      b.textContent = label;
+      b.onclick = onClick;
+      container.appendChild(b);
+    };
+    mkChip('🎧 הכול', !Store.data.activeMood, () => { Store.setActiveMood(null); Engine.onMoodChanged(); });
+    Store.data.moods.forEach(m => {
+      mkChip(m.emoji + ' ' + m.name, Store.data.activeMood === m.id, () => {
+        Store.setActiveMood(m.id);
+        Engine.onMoodChanged();
+        toast('עברנו למצב רוח: ' + m.emoji + ' ' + m.name);
+      });
     });
   }
-
-  // ---- מסך רדיו ----
-  function renderHero() {
-    $('heroEmpty').hidden = Store.data.channels.length > 0;
+  function renderMoodBar() {
+    renderMoodChips($('moodBar'));
+    renderMoodChips($('sheetMoods'), true);
   }
 
-  // ---- הגדרות: ערוצים ----
+  // ---- ערוצים (בעמוד הראשי) ----
   function renderChannels() {
     const list = $('channelList');
     list.innerHTML = '';
     if (!Store.data.channels.length) {
       const li = document.createElement('li');
       li.className = 'hint';
-      li.textContent = 'עוד אין ערוצים. אפשר להדביק למעלה קישור לכל ערוץ או פלייליסט מיוטיוב.';
+      li.textContent = 'עוד אין ערוצים 🙈 מדביקים למעלה קישור לערוץ או פלייליסט מיוטיוב — וזה כל מה שצריך כדי שהרדיו יעבוד.';
       list.appendChild(li);
       return;
     }
@@ -107,7 +122,7 @@
       const del = document.createElement('button');
       del.className = 'ch-del';
       del.title = 'מחיקה';
-      del.textContent = '🗑️';
+      del.innerHTML = icon('trash');
       del.onclick = () => { if (confirm('למחוק את "' + (ch.title || ch.ytId) + '"?')) Store.removeChannel(ch.key); };
 
       row1.append(title, role, del);
@@ -170,7 +185,7 @@
     btn.disabled = false;
   };
 
-  // ---- הגדרות: מצבי רוח ----
+  // ---- מצבי רוח (ניהול בהגדרות) ----
   function renderMoods() {
     const list = $('moodList');
     list.innerHTML = '';
@@ -184,7 +199,7 @@
       name.textContent = m.name;
       const del = document.createElement('button');
       del.className = 'm-del';
-      del.textContent = '🗑️';
+      del.innerHTML = icon('trash');
       del.onclick = () => { if (confirm('למחוק את מצב הרוח "' + m.name + '"?')) Store.removeMood(m.id); };
       li.append(emoji, name, del);
       list.appendChild(li);
@@ -202,7 +217,6 @@
 
   // ---- הגדרות כלליות ----
   function renderSettings() {
-    renderChannels();
     renderMoods();
     const s = Store.data.settings;
     $('setAnnounce').checked = s.announceHour;
@@ -211,7 +225,6 @@
     $('setNewsMin').value = s.newsMinutes;
     $('setSkipShorts').checked = s.skipShorts;
     $('setTransition').checked = s.transitionSound;
-    renderAccount();
   }
 
   $('setAnnounce').onchange = (e) => Store.setSetting('announceHour', e.target.checked);
@@ -221,26 +234,45 @@
   $('setSkipShorts').onchange = (e) => Store.setSetting('skipShorts', e.target.checked);
   $('setTransition').onchange = (e) => Store.setSetting('transitionSound', e.target.checked);
 
-  // ---- חשבון ----
+  // ---- חשבון: רק דרך הכפתור בפינה ----
   function renderAccount() {
-    const hint = $('accountHint');
-    const btnIn = $('btnLogin');
-    const btnOut = $('btnLogout');
+    const btn = $('btnAccount');
+    const user = Store.user;
+    if (user) {
+      btn.classList.add('logged-in');
+      btn.title = 'מחוברת: ' + (user.displayName || user.email) + ' — לחיצה להתנתקות';
+      if (user.photoURL) {
+        btn.style.backgroundImage = 'url("' + user.photoURL + '")';
+        btn.innerHTML = '';
+      }
+    } else {
+      btn.classList.remove('logged-in');
+      btn.style.backgroundImage = '';
+      btn.innerHTML = icon('user');
+      btn.title = 'התחברות עם Google';
+    }
+  }
+
+  $('btnAccount').onclick = async () => {
     if (!Store.firebaseAvailable) {
-      hint.innerHTML = 'כרגע הכול נשמר על המכשיר הזה. כדי להתחבר עם Google ולסנכרן בין מכשירים — צריך לחבר פרויקט Firebase (ההסבר בקובץ README).';
-      btnIn.hidden = true; btnOut.hidden = true;
+      toast('סנכרון בענן לא מוגדר עדיין (ראי README) — הכול נשמר על המכשיר 💾');
       return;
     }
     if (Store.user) {
-      hint.textContent = 'מחוברת בתור ' + (Store.user.displayName || Store.user.email) + ' — הערוצים ומצבי הרוח מסונכרנים בענן ☁️';
-      btnIn.hidden = true; btnOut.hidden = false;
+      if (confirm('להתנתק מהחשבון של ' + (Store.user.displayName || Store.user.email) + '?')) {
+        await Store.logout();
+        toast('התנתקת. הנתונים נשארים גם על המכשיר 💾');
+      }
     } else {
-      hint.textContent = 'אפשר להתחבר עם חשבון Google כדי לשמור את הרדיו שלך בענן ולשתף בין מכשירים.';
-      btnIn.hidden = false; btnOut.hidden = true;
+      try {
+        await Store.login();
+        toast('מחוברת! הרדיו שלך מסונכרן בענן ☁️');
+      } catch (e) {
+        console.error(e);
+        toast('ההתחברות נכשלה 😢 נסי שוב');
+      }
     }
-  }
-  $('btnLogin').onclick = () => Store.login().catch(e => toast('ההתחברות נכשלה 😢'));
-  $('btnLogout').onclick = () => Store.logout();
+  };
 
   // ---- חיבור למנוע ----
   Engine.ui.onPhase = (p) => {
@@ -249,16 +281,16 @@
     chip.textContent = info.text;
     chip.className = 'phase-chip ' + info.cls;
     const btn = $('btnPower');
-    const icon = $('powerIcon');
+    const iconEl = $('powerIcon');
     if (p === 'off') {
       btn.classList.remove('on');
-      icon.textContent = '▶';
+      iconEl.innerHTML = icon('play', 'ic-lg');
       $('npTitle').textContent = 'רדיולי מחכה לך 🌸';
       $('npChannel').textContent = '';
       $('playerCover').classList.remove('hidden');
     } else {
       btn.classList.add('on');
-      icon.textContent = '⏻';
+      iconEl.innerHTML = icon('power', 'ic-lg');
       $('playerCover').classList.add('hidden');
     }
   };
@@ -277,7 +309,8 @@
     } else {
       if (!Store.data.channels.length) {
         toast('קודם מוסיפים ערוצים 🙂');
-        showView('settings'); renderSettings();
+        showView('radio');
+        $('channelInput').focus();
         return;
       }
       sheet.classList.remove('collapsed');
@@ -291,17 +324,18 @@
 
   // ---- מצב תצוגת וידאו: רגיל ← קטן ← האזנה בלבד ----
   const VIDEO_MODES = [
-    { id: 'normal', label: '📺 וידאו' },
-    { id: 'mini', label: '🔲 וידאו קטן' },
-    { id: 'audio', label: '🎧 האזנה בלבד' },
+    { id: 'normal', icon: 'monitor', label: 'וידאו' },
+    { id: 'mini', icon: 'mini', label: 'וידאו קטן' },
+    { id: 'audio', icon: 'headphones', label: 'האזנה בלבד' },
   ];
   function applyVideoMode() {
     const mode = Store.data.settings.videoMode || 'normal';
+    const def = VIDEO_MODES.find(m => m.id === mode) || VIDEO_MODES[0];
     const wrap = $('playerWrap');
     wrap.classList.toggle('mode-mini', mode === 'mini');
     wrap.classList.toggle('mode-audio', mode === 'audio');
     $('audioNote').hidden = mode !== 'audio';
-    $('btnVideoMode').textContent = VIDEO_MODES.find(m => m.id === mode).label;
+    $('btnVideoMode').innerHTML = icon(def.icon) + ' ' + def.label;
     if (mode !== 'normal') YTBridge.lowQuality();
   }
   $('btnVideoMode').onclick = () => {
@@ -315,13 +349,13 @@
   // ---- רענון כללי כשמשהו משתנה ----
   Store.subscribe(() => {
     renderMoodBar();
-    renderHero();
-    if (!$('viewSettings').hidden) { renderChannels(); renderMoods(); renderAccount(); }
+    renderChannels();
+    if (!$('viewSettings').hidden) renderSettings();
   });
 
   // ---- אתחול ----
   renderMoodBar();
-  renderHero();
+  renderChannels();
   Store.initFirebase(() => renderAccount());
 
   if ('serviceWorker' in navigator) {

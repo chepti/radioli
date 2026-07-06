@@ -18,50 +18,53 @@
 </head>
 <body>
 
+  <!-- ספריית אייקונים (Lucide, מוטמע) -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <symbol id="i-radio" viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19.1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></symbol>
+    <symbol id="i-news" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></symbol>
+    <symbol id="i-mini" viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/></symbol>
+    <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  </svg>
+
   <header class="topbar">
-    <div class="logo">📻 <span>רדיולי</span></div>
+    <div class="logo"><svg class="ic"><use href="#i-radio"/></svg><span>רדיולי</span></div>
     <div class="clock" id="clock">--:--</div>
     <div class="topbar-actions">
-      <button id="btnAccount" class="icon-btn" title="חשבון">👤</button>
-      <button id="btnSettings" class="icon-btn" title="הגדרות וערוצים">⚙️</button>
+      <button id="btnAccount" class="icon-btn" title="התחברות"><svg class="ic"><use href="#i-user"/></svg></button>
+      <button id="btnSettings" class="icon-btn" title="הגדרות"><svg class="ic"><use href="#i-settings"/></svg></button>
     </div>
   </header>
 
   <!-- פס מצבי רוח -->
   <nav class="mood-bar" id="moodBar" aria-label="מצב רוח"></nav>
 
-  <!-- ===== מסך רדיו ===== -->
+  <!-- ===== מסך ראשי: הרדיו והערוצים ===== -->
   <main id="viewRadio" class="view">
 
-    <section class="hero" id="hero">
-      <div class="hero-art" id="heroArt">🎧</div>
-      <h1 id="heroTitle">רדיו משלך, בלי לחפש כלום</h1>
-      <p id="heroSub">לוחצים על הכפתור — ומקבלים שידור חי: כרוזת שעה, קצת חדשות, רבע שעה של דיבורים, שיר, וחוזר חלילה.</p>
-      <div class="hero-empty" id="heroEmpty" hidden>
-        <p>עוד אין ערוצים 🙈 כדי שהרדיו ינגן, צריך להוסיף לפחות ערוץ אחד.</p>
-        <button class="btn primary" id="btnGoAddChannels">➕ להוסיף ערוצים</button>
+    <section class="hero">
+      <div class="dial">
+        <div class="dial-ring"></div>
+        <div class="dial-inner"><div id="dialAnim"></div></div>
       </div>
+      <h1>רדיו משלך, בלי לחפש כלום</h1>
+      <p class="hero-sub">כרוזת שעה, קצת חדשות, רבע שעה של דיבורים, שיר — וחוזר חלילה.</p>
     </section>
-
-    <section class="timeline-card">
-      <h2>🕐 איך נראית שעה ברדיולי</h2>
-      <ol class="timeline">
-        <li><span class="t-emoji">🕰️</span> בשעה עגולה — אומרים מה השעה</li>
-        <li><span class="t-emoji">📰</span> מהדורת חדשות קצרה מהערוץ שבחרת</li>
-        <li><span class="t-emoji">🗣️</span> כרבע שעה של דיבורים</li>
-        <li><span class="t-emoji">🎵</span> הפסקה לשיר</li>
-        <li><span class="t-emoji">🔁</span> וחוזרים לדיבורים…</li>
-      </ol>
-    </section>
-
-  </main>
-
-  <!-- ===== מסך הגדרות וערוצים ===== -->
-  <main id="viewSettings" class="view" hidden>
 
     <section class="card">
       <div class="card-head">
-        <h2>📡 הערוצים שלי</h2>
+        <h2><svg class="ic ic-head"><use href="#i-radio"/></svg> הערוצים שלי</h2>
         <p class="hint">מדביקים קישור לערוץ יוטיוב, לפלייליסט או כינוי (כמו&nbsp;<span dir="ltr">@kan11</span>) — ובוחרים תפקיד.</p>
       </div>
       <form id="addChannelForm" class="add-form">
@@ -71,27 +74,32 @@
           <option value="talk">🗣️ דיבורים</option>
           <option value="news">📰 חדשות</option>
         </select>
-        <button type="submit" class="btn primary" id="btnAddChannel">הוספה</button>
+        <button type="submit" class="btn primary" id="btnAddChannel"><svg class="ic"><use href="#i-plus"/></svg> הוספה</button>
       </form>
       <p class="form-status" id="addStatus"></p>
       <ul class="channel-list" id="channelList"></ul>
     </section>
 
+  </main>
+
+  <!-- ===== מסך הגדרות: מצבי רוח, לוח שידורים ===== -->
+  <main id="viewSettings" class="view" hidden>
+
     <section class="card">
       <div class="card-head">
         <h2>🌈 מצבי רוח</h2>
-        <p class="hint">יוצרים מצב רוח, ואז מסמנים בכל ערוץ לאילו מצבי רוח הוא מתאים. כשמחליפים מצב רוח — הרדיו מנגן רק מהערוצים המתאימים.</p>
+        <p class="hint">יוצרים מצב רוח, ואז מסמנים בכל ערוץ (בעמוד הראשי) לאילו מצבי רוח הוא מתאים. בזמן האזנה מחליפים מצב רוח בלחיצה.</p>
       </div>
       <form id="addMoodForm" class="add-form">
         <input type="text" id="moodEmoji" class="emoji-input" placeholder="🙂" maxlength="4">
         <input type="text" id="moodName" placeholder="שם מצב הרוח (למשל: רגוע)" required>
-        <button type="submit" class="btn primary">הוספה</button>
+        <button type="submit" class="btn primary"><svg class="ic"><use href="#i-plus"/></svg> הוספה</button>
       </form>
       <ul class="mood-list" id="moodList"></ul>
     </section>
 
     <section class="card">
-      <div class="card-head"><h2>⏱️ לוח השידורים</h2></div>
+      <div class="card-head"><h2><svg class="ic ic-head"><use href="#i-clock"/></svg> לוח השידורים</h2></div>
       <div class="settings-grid">
         <label class="setting-row">
           <span>כרוזת שעה בשעה עגולה</span>
@@ -121,20 +129,22 @@
     </section>
 
     <section class="card">
-      <div class="card-head"><h2>👤 חשבון וסנכרון</h2></div>
-      <div id="accountBox">
-        <p class="hint" id="accountHint"></p>
-        <button class="btn" id="btnLogin" hidden>🔑 התחברות עם Google</button>
-        <button class="btn" id="btnLogout" hidden>יציאה</button>
-      </div>
+      <h2>🕐 איך נראית שעה ברדיולי</h2>
+      <ol class="timeline">
+        <li><span class="t-emoji">🕰️</span> בשעה עגולה — אומרים מה השעה</li>
+        <li><span class="t-emoji">📰</span> מהדורת חדשות קצרה מהערוץ שבחרת</li>
+        <li><span class="t-emoji">🗣️</span> כרבע שעה של דיבורים</li>
+        <li><span class="t-emoji">🎵</span> הפסקה לשיר</li>
+        <li><span class="t-emoji">🔁</span> וחוזרים לדיבורים…</li>
+      </ol>
     </section>
 
     <div class="back-row">
-      <button class="btn" id="btnBackToRadio">⬅ חזרה לרדיו</button>
+      <button class="btn" id="btnBackToRadio"><svg class="ic"><use href="#i-back"/></svg> חזרה לרדיו</button>
     </div>
   </main>
 
-  <!-- ===== וילון הנגן (bottom sheet) ===== -->
+  <!-- ===== וילון הנגן ===== -->
   <section class="player-sheet collapsed" id="playerSheet">
     <button class="sheet-handle" id="sheetHandle" aria-label="פתיחה וסגירה של הנגן">
       <span class="handle-bar"></span>
@@ -142,14 +152,14 @@
 
     <div class="mini-row" id="miniRow">
       <button class="power-btn" id="btnPower" aria-label="הפעלה / כיבוי">
-        <span id="powerIcon">▶</span>
+        <span id="powerIcon"><svg class="ic ic-lg"><use href="#i-play"/></svg></span>
       </button>
       <div class="mini-info">
         <div class="phase-chip" id="phaseChip">כבוי</div>
         <div class="mini-title" id="npTitle">רדיולי מחכה לך 🌸</div>
         <div class="mini-sub" id="npChannel"></div>
       </div>
-      <button class="icon-btn skip-btn" id="btnSkip" title="דילוג">⏭</button>
+      <button class="icon-btn skip-btn" id="btnSkip" title="דילוג"><svg class="ic"><use href="#i-skip"/></svg></button>
     </div>
 
     <div class="sheet-body">
@@ -158,11 +168,12 @@
         <div class="player-cover" id="playerCover">📻</div>
       </div>
       <div class="audio-note" id="audioNote" hidden>🎧 מצב האזנה בלבד — הווידאו מוסתר</div>
+      <div class="sheet-moods" id="sheetMoods"></div>
       <div class="quick-actions">
-        <button class="btn small" id="btnVideoMode" title="גודל תצוגת וידאו">📺 וידאו</button>
-        <button class="btn small" id="btnSongNow">🎵 שיר עכשיו</button>
-        <button class="btn small" id="btnTalkNow">🗣️ דיבורים</button>
-        <button class="btn small" id="btnNewsNow">📰 חדשות</button>
+        <button class="btn small dark" id="btnVideoMode" title="גודל תצוגת וידאו"><svg class="ic"><use href="#i-monitor"/></svg> וידאו</button>
+        <button class="btn small dark" id="btnSongNow"><svg class="ic"><use href="#i-music"/></svg> שיר</button>
+        <button class="btn small dark" id="btnTalkNow"><svg class="ic"><use href="#i-mic"/></svg> דיבורים</button>
+        <button class="btn small dark" id="btnNewsNow"><svg class="ic"><use href="#i-news"/></svg> חדשות</button>
       </div>
       <p class="engine-status" id="engineStatus"></p>
     </div>
@@ -171,6 +182,7 @@
   <div class="toast" id="toast" hidden></div>
 
   <script src="js/config.js"></script>
+  <script src="js/vendor/lottie_light.min.js"></script>
   <script src="js/store.js"></script>
   <script src="js/youtube.js"></script>
   <script src="js/engine.js"></script>

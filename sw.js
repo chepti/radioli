@@ -1,5 +1,5 @@
 // ===== רדיולי — Service Worker =====
-const CACHE = 'radioli-v4';
+const CACHE = 'radioli-v5';
 const SHELL = [
   './',
   'index.html',
@@ -9,6 +9,8 @@ const SHELL = [
   'js/youtube.js',
   'js/engine.js',
   'js/ui.js',
+  'js/vendor/lottie_light.min.js',
+  'RADIOANIM.json',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

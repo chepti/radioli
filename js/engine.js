@@ -153,10 +153,15 @@
     return all;
   }
 
-  function pickRandom(pool) {
+  function pickRandom(pool, avoidChannel) {
     if (!pool.length) return null;
-    const fresh = pool.filter(v => !Engine.recent.includes(v.videoId));
-    const list = fresh.length ? fresh : pool;
+    let list = pool.filter(v => !Engine.recent.includes(v.videoId));
+    if (!list.length) list = pool;
+    // גיוון: לא לחזור על אותו ערוץ ברצף, אם יש חלופות
+    if (avoidChannel) {
+      const diverse = list.filter(v => v.channelTitle !== avoidChannel);
+      if (diverse.length) list = diverse;
+    }
     return list[Math.floor(Math.random() * list.length)];
   }
 
@@ -186,7 +191,7 @@
       v = Engine.currentTalk;
       pos = Engine.positions[v.videoId] || 0;
     } else {
-      v = pickRandom(talkPool);
+      v = pickRandom(talkPool, Engine.lastTalkChannel);
       if (v) pos = Engine.positions[v.videoId] || 0;
     }
     if (!v) {
@@ -194,6 +199,7 @@
       return startSong(true);
     }
     Engine.currentTalk = v;
+    Engine.lastTalkChannel = v.channelTitle;
     setPhase('talk');
     Engine.talkDeadline = Date.now() + Store.data.settings.talkMinutes * 60 * 1000;
     status('');
@@ -203,13 +209,14 @@
   async function startSong(continuous) {
     saveTalkPosition();
     const pool = await buildPool('music');
-    const v = pickRandom(pool);
+    const v = pickRandom(pool, Engine.lastSongChannel);
     if (!v) {
       // אין מוזיקה — נשארים בדיבורים
       if (Engine.phase !== 'talk') return startTalk(false);
       Engine.talkDeadline = Date.now() + Store.data.settings.talkMinutes * 60 * 1000;
       return;
     }
+    Engine.lastSongChannel = v.channelTitle;
     setPhase('song');
     Engine.continuousMusic = !!continuous;
     status('');

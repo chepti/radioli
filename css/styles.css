@@ -6,13 +6,15 @@
   --ink-soft: #8a6b7c;
   --accent: #ff7a59;
   --accent-deep: #e85d3d;
+  --hot: #ff5e8a;
   --peach: #ffd9c7;
   --pink: #ffe3ec;
   --mint: #d9f2e6;
   --sky: #dceefb;
+  --dark: #2b1b2e;
+  --dark-2: #3b2740;
   --radius: 20px;
   --shadow: 0 6px 24px rgba(120, 60, 40, .12);
-  --sheet-h: 460px;
 }
 
 * { box-sizing: border-box; }
@@ -27,11 +29,28 @@ html, body {
 
 body {
   min-height: 100vh;
-  padding-bottom: 120px; /* מקום לוילון המכווץ */
+  padding-bottom: 130px; /* מקום לוילון המכווץ */
+  background-image: radial-gradient(rgba(255, 122, 89, .07) 1.5px, transparent 1.5px);
+  background-size: 26px 26px;
 }
 
 button { font-family: inherit; cursor: pointer; }
 input, select { font-family: inherit; }
+
+/* אייקוני Lucide */
+.ic {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -3px;
+  flex: 0 0 auto;
+}
+.ic-lg { width: 26px; height: 26px; }
+.ic-head { color: var(--accent); }
 
 /* ===== סרגל עליון ===== */
 .topbar {
@@ -43,22 +62,23 @@ input, select { font-family: inherit; }
   gap: 10px;
   padding: 8px 14px;
   padding-top: calc(8px + env(safe-area-inset-top));
-  background: linear-gradient(120deg, #ff9a76, var(--accent) 50%, #ff5e8a);
+  background: linear-gradient(120deg, #ff9a76, var(--accent) 50%, var(--hot));
   color: #fff;
   border-radius: 0 0 22px 22px;
   box-shadow: 0 4px 18px rgba(232, 93, 61, .28);
 }
 
 .logo {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: bold;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: rgba(255,255,255,.16);
   border-radius: 999px;
   padding: 6px 14px;
 }
+.logo .ic { width: 20px; height: 20px; }
 
 .clock {
   margin-inline-start: auto;
@@ -77,23 +97,29 @@ input, select { font-family: inherit; }
   border: 1px solid rgba(255,255,255,.25);
   background: rgba(255,255,255,.16);
   color: #fff;
-  font-size: 1.1rem;
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform .15s, background .15s;
+  background-size: cover;
+  background-position: center;
 }
-.icon-btn:hover { transform: scale(1.08); background: rgba(255,255,255,.3); }
+.icon-btn:hover { transform: scale(1.08); background-color: rgba(255,255,255,.3); }
+.icon-btn.logged-in { border-color: #7cc9a2; box-shadow: 0 0 0 2px rgba(124,201,162,.5); }
 
 /* ===== פס מצבי רוח ===== */
 .mood-bar {
   display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 14px 16px 4px;
+  max-width: 760px;
+  margin: 0 auto;
 }
-.mood-bar::-webkit-scrollbar { display: none; }
 
 .mood-chip {
   flex: 0 0 auto;
@@ -113,42 +139,68 @@ input, select { font-family: inherit; }
   box-shadow: 0 4px 12px rgba(255,122,89,.4);
 }
 
-/* ===== מסכים ===== */
+/* ===== מסכים — ממורכז ===== */
 .view {
-  max-width: 720px;
+  max-width: 640px;
   margin: 0 auto;
   padding: 8px 16px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+.view[hidden] { display: none; }
 
+/* ===== חוגת הרדיו ===== */
 .hero {
   text-align: center;
-  padding: 24px 16px;
-  background: linear-gradient(160deg, var(--pink), var(--peach));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  padding: 18px 8px 6px;
 }
-.hero-art { font-size: 3.2rem; }
-.hero h1 { margin: 8px 0 4px; font-size: 1.4rem; }
-.hero p { margin: 0; color: var(--ink-soft); font-size: .95rem; }
 
-.hero-empty {
-  margin-top: 16px;
-  background: rgba(255,255,255,.7);
-  border-radius: 16px;
-  padding: 14px;
+.dial {
+  position: relative;
+  width: 210px;
+  height: 210px;
+  margin: 0 auto 14px;
 }
-.hero-empty p { margin: 0 0 10px; color: var(--ink); }
+.dial-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 210deg, var(--hot), var(--accent), #ffb46b, var(--pink), var(--hot));
+  filter: drop-shadow(0 10px 28px rgba(255, 94, 138, .38));
+  animation: spin 24s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.dial-inner {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: #fffdf9;
+  box-shadow: inset 0 2px 10px rgba(120,60,40,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#dialAnim { width: 88%; height: 88%; }
 
-.timeline-card, .card {
+.hero h1 { margin: 6px 0 4px; font-size: 1.35rem; }
+.hero-sub { margin: 0; color: var(--ink-soft); font-size: .95rem; }
+
+/* ===== כרטיסים ===== */
+.card {
   background: var(--card);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 18px;
 }
-.timeline-card h2, .card h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.card h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .timeline {
   list-style: none;
@@ -178,13 +230,22 @@ input, select { font-family: inherit; }
   background: var(--pink);
   color: var(--ink);
   transition: transform .15s, box-shadow .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
 }
 .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(120,60,40,.18); }
 .btn.primary {
-  background: var(--accent);
+  background: linear-gradient(120deg, var(--accent), var(--hot));
   color: #fff;
 }
 .btn.small { padding: 8px 14px; font-size: .9rem; }
+.btn.dark {
+  background: var(--dark-2);
+  color: #ffd9c7;
+}
+.btn.dark:hover { box-shadow: 0 4px 12px rgba(0,0,0,.4); }
 .btn:disabled { opacity: .5; transform: none; cursor: wait; }
 
 /* ===== טפסים ===== */
@@ -252,10 +313,11 @@ input, select { font-family: inherit; }
 .channel-item .ch-del {
   border: none;
   background: none;
-  font-size: 1rem;
-  opacity: .6;
+  color: var(--ink-soft);
+  opacity: .7;
+  padding: 4px;
 }
-.channel-item .ch-del:hover { opacity: 1; }
+.channel-item .ch-del:hover { opacity: 1; color: var(--accent-deep); }
 
 .ch-moods {
   display: flex;
@@ -286,8 +348,8 @@ input, select { font-family: inherit; }
   padding: 10px 14px;
 }
 .mood-item .m-name { flex: 1; }
-.mood-item .m-del { border: none; background: none; opacity: .6; }
-.mood-item .m-del:hover { opacity: 1; }
+.mood-item .m-del { border: none; background: none; color: var(--ink-soft); opacity: .7; padding: 4px; }
+.mood-item .m-del:hover { opacity: 1; color: var(--accent-deep); }
 
 /* ===== הגדרות ===== */
 .settings-grid { display: flex; flex-direction: column; gap: 10px; }
@@ -317,20 +379,22 @@ input, select { font-family: inherit; }
 
 .back-row { text-align: center; }
 
-/* ===== וילון הנגן ===== */
+/* ===== וילון הנגן — כהה, בהשראת רדיו לילי ===== */
 .player-sheet {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 30;
-  background: var(--card);
+  background: linear-gradient(170deg, var(--dark-2), var(--dark) 70%);
+  color: #fff;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 30px rgba(120,60,40,.2);
-  max-width: 720px;
+  box-shadow: 0 -8px 30px rgba(43, 27, 46, .45);
+  max-width: 640px;
   margin: 0 auto;
   transition: transform .3s ease;
   padding-bottom: env(safe-area-inset-bottom);
+  direction: rtl;
 }
 .player-sheet.collapsed .sheet-body { display: none; }
 
@@ -346,7 +410,7 @@ input, select { font-family: inherit; }
   width: 48px;
   height: 5px;
   border-radius: 999px;
-  background: var(--peach);
+  background: rgba(255, 217, 199, .4);
   margin: 0 auto;
 }
 
@@ -362,17 +426,19 @@ input, select { font-family: inherit; }
   height: 58px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, var(--accent), #ff5e8a);
+  background: linear-gradient(135deg, var(--accent), var(--hot));
   color: #fff;
-  font-size: 1.5rem;
-  box-shadow: 0 6px 16px rgba(255,122,89,.45);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px rgba(255, 94, 138, .25), 0 6px 16px rgba(255,122,89,.5);
   transition: transform .15s;
   flex: 0 0 auto;
 }
 .power-btn:hover { transform: scale(1.06); }
 .power-btn.on {
   background: linear-gradient(135deg, #7cc9a2, #3aa876);
-  box-shadow: 0 6px 16px rgba(58,168,118,.45);
+  box-shadow: 0 0 0 4px rgba(124, 201, 162, .25), 0 6px 16px rgba(58,168,118,.5);
 }
 
 .mini-info { flex: 1; min-width: 0; }
@@ -380,14 +446,14 @@ input, select { font-family: inherit; }
 .phase-chip {
   display: inline-block;
   font-size: .75rem;
-  background: var(--sky);
+  background: rgba(220, 238, 251, .18);
   border-radius: 999px;
   padding: 2px 10px;
   margin-bottom: 3px;
-  color: var(--ink);
+  color: #ffd9c7;
 }
-.phase-chip.live { background: var(--mint); color: #1f6b45; }
-.phase-chip.news { background: #ffe0e0; color: #a33; }
+.phase-chip.live { background: rgba(124, 201, 162, .25); color: #a5e8c6; }
+.phase-chip.news { background: rgba(255, 94, 94, .25); color: #ffb3b3; }
 
 .mini-title {
   font-weight: bold;
@@ -398,13 +464,13 @@ input, select { font-family: inherit; }
 }
 .mini-sub {
   font-size: .8rem;
-  color: var(--ink-soft);
+  color: rgba(255, 217, 199, .7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.skip-btn { background: var(--pink); color: var(--ink); }
+.skip-btn { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
 
 .sheet-body { padding: 0 16px 16px; }
 
@@ -414,7 +480,7 @@ input, select { font-family: inherit; }
   aspect-ratio: 16 / 9;
   border-radius: 16px;
   overflow: hidden;
-  background: #2a1b24;
+  background: #1d1220;
   transition: height .25s ease;
 }
 .player-wrap iframe { width: 100%; height: 100%; }
@@ -430,11 +496,12 @@ input, select { font-family: inherit; }
 }
 .audio-note {
   text-align: center;
-  background: linear-gradient(120deg, var(--pink), var(--sky));
+  background: rgba(255, 227, 236, .12);
+  border: 1px solid rgba(255, 227, 236, .2);
   border-radius: 16px;
-  padding: 18px 12px;
-  font-size: .95rem;
-  color: var(--ink);
+  padding: 16px 12px;
+  font-size: .92rem;
+  color: #ffd9c7;
   margin-top: 4px;
 }
 
@@ -445,11 +512,32 @@ input, select { font-family: inherit; }
   align-items: center;
   justify-content: center;
   font-size: 3rem;
-  background: linear-gradient(160deg, #4a2b3c, #2a1b24);
+  background: linear-gradient(160deg, var(--dark-2), #1d1220);
   color: #fff;
   pointer-events: none;
 }
 .player-cover.hidden { display: none; }
+
+/* מצבי רוח בתוך הנגן */
+.sheet-moods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.sheet-moods .mood-chip {
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255, 217, 199, .35);
+  color: #ffd9c7;
+  font-size: .85rem;
+  padding: 6px 13px;
+}
+.sheet-moods .mood-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
 
 .quick-actions {
   display: flex;
@@ -461,7 +549,7 @@ input, select { font-family: inherit; }
 
 .engine-status {
   text-align: center;
-  color: var(--ink-soft);
+  color: rgba(255, 217, 199, .7);
   font-size: .82rem;
   min-height: 1.1em;
   margin: 10px 0 0;
@@ -470,7 +558,7 @@ input, select { font-family: inherit; }
 /* ===== טוסט ===== */
 .toast {
   position: fixed;
-  bottom: 130px;
+  bottom: 140px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--ink);
@@ -484,21 +572,16 @@ input, select { font-family: inherit; }
   text-align: center;
 }
 
-/* ===== דסקטופ: הוילון הופך לכרטיס צף ===== */
-@media (min-width: 900px) {
-  body { padding-bottom: 24px; padding-inline-end: 420px; }
-  .view { margin: 0; margin-inline-start: auto; }
+/* ===== דסקטופ: תוכן ממורכז, הנגן כרטיס צף בפינה ===== */
+@media (min-width: 1000px) {
+  body { padding-bottom: 40px; }
   .player-sheet {
-    left: 16px;
+    left: 20px;
     right: auto;
-    bottom: 16px;
+    bottom: 20px;
     width: 384px;
     border-radius: 24px;
   }
   .player-sheet.collapsed .sheet-body { display: block; } /* בדסקטופ תמיד פתוח */
   .sheet-handle { display: none; }
-}
-
-@media (max-width: 899px) {
-  [dir="rtl"] .player-sheet { direction: rtl; }
 }
