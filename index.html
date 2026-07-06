@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>רדיולי 📻 — הרדיו האישי שלי</title>
+  <meta name="description" content="רדיו אישי מערוצי היוטיוב שאת אוהבת — חדשות, דיבורים ושירים, מסביב לשעון.">
+  <meta name="theme-color" content="#ff7a59">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="logo">📻 <span>רדיולי</span></div>
+    <div class="clock" id="clock">--:--</div>
+    <div class="topbar-actions">
+      <button id="btnAccount" class="icon-btn" title="חשבון">👤</button>
+      <button id="btnSettings" class="icon-btn" title="הגדרות וערוצים">⚙️</button>
+    </div>
+  </header>
+
+  <!-- פס מצבי רוח -->
+  <nav class="mood-bar" id="moodBar" aria-label="מצב רוח"></nav>
+
+  <!-- ===== מסך רדיו ===== -->
+  <main id="viewRadio" class="view">
+
+    <section class="hero" id="hero">
+      <div class="hero-art" id="heroArt">🎧</div>
+      <h1 id="heroTitle">רדיו משלך, בלי לחפש כלום</h1>
+      <p id="heroSub">לוחצים על הכפתור — ומקבלים שידור חי: כרוזת שעה, קצת חדשות, רבע שעה של דיבורים, שיר, וחוזר חלילה.</p>
+      <div class="hero-empty" id="heroEmpty" hidden>
+        <p>עוד אין ערוצים 🙈 כדי שהרדיו ינגן, צריך להוסיף לפחות ערוץ אחד.</p>
+        <button class="btn primary" id="btnGoAddChannels">➕ להוסיף ערוצים</button>
+      </div>
+    </section>
+
+    <section class="timeline-card">
+      <h2>🕐 איך נראית שעה ברדיולי</h2>
+      <ol class="timeline">
+        <li><span class="t-emoji">🕰️</span> בשעה עגולה — אומרים מה השעה</li>
+        <li><span class="t-emoji">📰</span> מהדורת חדשות קצרה מהערוץ שבחרת</li>
+        <li><span class="t-emoji">🗣️</span> כרבע שעה של דיבורים</li>
+        <li><span class="t-emoji">🎵</span> הפסקה לשיר</li>
+        <li><span class="t-emoji">🔁</span> וחוזרים לדיבורים…</li>
+      </ol>
+    </section>
+
+  </main>
+
+  <!-- ===== מסך הגדרות וערוצים ===== -->
+  <main id="viewSettings" class="view" hidden>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>📡 הערוצים שלי</h2>
+        <p class="hint">מדביקים קישור לערוץ יוטיוב, לפלייליסט או כינוי (כמו&nbsp;<span dir="ltr">@kan11</span>) — ובוחרים תפקיד.</p>
+      </div>
+      <form id="addChannelForm" class="add-form">
+        <input type="text" id="channelInput" placeholder="קישור לערוץ / פלייליסט / @כינוי" required>
+        <select id="channelRole">
+          <option value="music">🎵 מוזיקה</option>
+          <option value="talk">🗣️ דיבורים</option>
+          <option value="news">📰 חדשות</option>
+        </select>
+        <button type="submit" class="btn primary" id="btnAddChannel">הוספה</button>
+      </form>
+      <p class="form-status" id="addStatus"></p>
+      <ul class="channel-list" id="channelList"></ul>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>🌈 מצבי רוח</h2>
+        <p class="hint">יוצרים מצב רוח, ואז מסמנים בכל ערוץ לאילו מצבי רוח הוא מתאים. כשמחליפים מצב רוח — הרדיו מנגן רק מהערוצים המתאימים.</p>
+      </div>
+      <form id="addMoodForm" class="add-form">
+        <input type="text" id="moodEmoji" class="emoji-input" placeholder="🙂" maxlength="4">
+        <input type="text" id="moodName" placeholder="שם מצב הרוח (למשל: רגוע)" required>
+        <button type="submit" class="btn primary">הוספה</button>
+      </form>
+      <ul class="mood-list" id="moodList"></ul>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>⏱️ לוח השידורים</h2></div>
+      <div class="settings-grid">
+        <label class="setting-row">
+          <span>כרוזת שעה בשעה עגולה</span>
+          <input type="checkbox" id="setAnnounce">
+        </label>
+        <label class="setting-row">
+          <span>חדשות בשעה עגולה</span>
+          <input type="checkbox" id="setNews">
+        </label>
+        <label class="setting-row">
+          <span>אורך מקטע דיבורים (דקות)</span>
+          <input type="number" id="setTalkMin" min="3" max="60" step="1">
+        </label>
+        <label class="setting-row">
+          <span>אורך חדשות מקסימלי (דקות)</span>
+          <input type="number" id="setNewsMin" min="1" max="60" step="1">
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>👤 חשבון וסנכרון</h2></div>
+      <div id="accountBox">
+        <p class="hint" id="accountHint"></p>
+        <button class="btn" id="btnLogin" hidden>🔑 התחברות עם Google</button>
+        <button class="btn" id="btnLogout" hidden>יציאה</button>
+      </div>
+    </section>
+
+    <div class="back-row">
+      <button class="btn" id="btnBackToRadio">⬅ חזרה לרדיו</button>
+    </div>
+  </main>
+
+  <!-- ===== וילון הנגן (bottom sheet) ===== -->
+  <section class="player-sheet collapsed" id="playerSheet">
+    <button class="sheet-handle" id="sheetHandle" aria-label="פתיחה וסגירה של הנגן">
+      <span class="handle-bar"></span>
+    </button>
+
+    <div class="mini-row" id="miniRow">
+      <button class="power-btn" id="btnPower" aria-label="הפעלה / כיבוי">
+        <span id="powerIcon">▶</span>
+      </button>
+      <div class="mini-info">
+        <div class="phase-chip" id="phaseChip">כבוי</div>
+        <div class="mini-title" id="npTitle">רדיולי מחכה לך 🌸</div>
+        <div class="mini-sub" id="npChannel"></div>
+      </div>
+      <button class="icon-btn skip-btn" id="btnSkip" title="דילוג">⏭</button>
+    </div>
+
+    <div class="sheet-body">
+      <div class="player-wrap" id="playerWrap">
+        <div id="ytPlayer"></div>
+        <div class="player-cover" id="playerCover">📻</div>
+      </div>
+      <div class="quick-actions">
+        <button class="btn small" id="btnSongNow">🎵 שיר עכשיו</button>
+        <button class="btn small" id="btnTalkNow">🗣️ דיבורים</button>
+        <button class="btn small" id="btnNewsNow">📰 חדשות</button>
+      </div>
+      <p class="engine-status" id="engineStatus"></p>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/youtube.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>
