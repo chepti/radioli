@@ -76,7 +76,13 @@
     return parseFeedXml(await res.text());
   }
 
-  // מביא את הסרטונים האחרונים של ערוץ/פלייליסט (עם מטמון קבוע ונפילה לעותק ישן)
+  // מיזוג ספרייה: חדשים קודם, בלי כפילויות, עד 250 לערוץ — הספרייה גדלה עם הזמן
+  function mergeVideos(freshList, oldList) {
+    const seen = new Set(freshList.map(v => v.videoId));
+    return freshList.concat(oldList.filter(v => !seen.has(v.videoId))).slice(0, 250);
+  }
+
+  // מביא סרטונים של ערוץ/פלייליסט ומצרף לספרייה מצטברת (עם נפילה לעותק ישן)
   async function fetchFeed(kind, ytId, force) {
     const cacheKey = kind + ':' + ytId;
     const cached = feedStore[cacheKey];
@@ -84,18 +90,26 @@
     try {
       let out = null;
       if (kind === 'channel') {
-        // UULF = פלייליסט הסרטונים הארוכים של הערוץ — בלי שורטס במקור
-        try {
-          const lf = await fetchFeedRaw('playlist', 'UULF' + ytId.slice(2));
-          if (lf.videos.length) {
-            out = { title: (lf.videos[0] && lf.videos[0].channelTitle) || lf.title, videos: lf.videos, shortsFree: true };
-          }
-        } catch (e) { /* אין UULF לערוץ הזה — נופלים לפיד הרגיל */ }
+        // UULF = הסרטונים הארוכים החדשים; UULP = הארוכים הפופולריים. שניהם בלי שורטס.
+        const suffix = ytId.slice(2);
+        const [lf, lp] = await Promise.all([
+          fetchFeedRaw('playlist', 'UULF' + suffix).catch(() => null),
+          fetchFeedRaw('playlist', 'UULP' + suffix).catch(() => null),
+        ]);
+        const fresh = (lf ? lf.videos : []).concat(lp ? lp.videos : []);
+        if (fresh.length) {
+          out = {
+            title: (fresh[0] && fresh[0].channelTitle) || (lf && lf.title) || '',
+            videos: fresh,
+            shortsFree: true,
+          };
+        }
       }
       if (!out) {
         const f = await fetchFeedRaw(kind, ytId);
         out = { title: f.title, videos: f.videos, shortsFree: false };
       }
+      out.videos = mergeVideos(out.videos, cached ? cached.videos : []);
       out.at = Date.now();
       feedStore[cacheKey] = out;
       saveFeedStore();

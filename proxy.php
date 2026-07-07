@@ -16,7 +16,7 @@ function fetch_url($url) {
         CURLOPT_MAXREDIRS => 4,
         CURLOPT_TIMEOUT => 15,
         CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
-        CURLOPT_HTTPHEADER => ['Accept-Language: he,en;q=0.8'],
+        CURLOPT_HTTPHEADER => ['Accept-Language: he,en;q=0.8', 'Cookie: SOCS=CAI'],
         CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
         CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
     ]);
