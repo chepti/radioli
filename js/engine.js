@@ -2,6 +2,7 @@
 (function () {
   const POS_KEY = 'radioli-positions-v1';
   const BLOCKED_KEY = 'radioli-blocked-v1';
+  const HEARD_KEY = 'radioli-heard-v1';
 
   const Engine = {
     on: false,
@@ -14,7 +15,11 @@
     recent: [],
     positions: loadPositions(),
     blocked: loadBlocked(),
+    heard: loadHeard(),
     errorStreak: 0,
+    switching: false,     // מגן מפני מעברים כפולים במקביל
+    songDeadline: 0,
+    lastAliveAt: 0,       // כלב שמירה: מתי לאחרונה הנגן באמת ניגן
     tickTimer: null,
     ui: { onPhase() {}, onTrack() {}, onStatus() {} },
   };
@@ -36,6 +41,22 @@
     if (!videoId) return;
     Engine.blocked[videoId] = true;
     localStorage.setItem(BLOCKED_KEY, JSON.stringify(Engine.blocked));
+  }
+
+  // סרטונים שכבר נשמעו — לא חוזרים עליהם (עד שנגמר המאגר)
+  function loadHeard() {
+    try { return JSON.parse(localStorage.getItem(HEARD_KEY)) || {}; }
+    catch (e) { return {}; }
+  }
+  function markHeard(videoId) {
+    if (!videoId || Engine.heard[videoId]) return;
+    Engine.heard[videoId] = Date.now();
+    const keys = Object.keys(Engine.heard);
+    if (keys.length > 3000) {
+      keys.sort((a, b) => Engine.heard[a] - Engine.heard[b]);
+      keys.slice(0, 500).forEach(k => delete Engine.heard[k]);
+    }
+    localStorage.setItem(HEARD_KEY, JSON.stringify(Engine.heard));
   }
 
   function status(msg) { Engine.ui.onStatus(msg || ''); }
@@ -198,6 +219,9 @@
       const filtered = all.filter(v => !YTBridge.isShort(v.videoId));
       if (filtered.length) all = filtered; // אם הכול שורטס — עדיף שורט משתיקה
     }
+    // מסננים סרטונים שכבר נשמעו; אם הכול נשמע — מוותרים על הסינון (שיהיה מה לנגן)
+    const unheard = all.filter(v => !Engine.heard[v.videoId]);
+    if (unheard.length) all = unheard;
     return all;
   }
 
@@ -215,6 +239,8 @@
 
   function playVideo(v, startSeconds) {
     rememberRecent(v.videoId);
+    Engine.lastAliveAt = Date.now(); // כלב השמירה מתחיל לספור מחדש
+    Engine.nudged = false;
     setTrack(v);
     softChime(); // מנגן רק אם נבחר צליל
     YTBridge.play(v.videoId, startSeconds);
@@ -226,6 +252,8 @@
     if (Engine.currentTalk) {
       const t = YTBridge.currentTime();
       if (t > 5) Engine.positions[Engine.currentTalk.videoId] = Math.max(0, t - 3);
+      // האזנה משמעותית — לא להציע את הסרטון שוב בהפעלות הבאות
+      if (t > 90) markHeard(Engine.currentTalk.videoId);
       savePositions();
     }
   }
@@ -246,6 +274,7 @@
       // אין ערוצי דיבורים — רדיו מוזיקה רצוף
       return startSong(true);
     }
+    if (!pos) pos = Store.data.settings.introSkipSeconds || 0; // דילוג על פתיח
     Engine.currentTalk = v;
     Engine.lastTalkChannel = v.channelTitle;
     setPhase('talk');
@@ -267,6 +296,7 @@
     Engine.lastSongChannel = v.channelTitle;
     setPhase('song');
     Engine.continuousMusic = !!continuous;
+    Engine.songDeadline = Date.now() + Store.data.settings.songMinutes * 60 * 1000;
     status('');
     playVideo(v, 0);
   }
@@ -309,27 +339,74 @@
   }
 
   // ---- טיק ----
+  // עוטף מעבר אסינכרוני כך שלא יופעל פעמיים במקביל (זה גרם לקפיצות בין שירים)
+  async function transition(fn) {
+    if (Engine.switching) return;
+    Engine.switching = true;
+    try { await fn(); } finally { Engine.switching = false; }
+  }
+
   function tick() {
-    if (!Engine.on) return;
+    if (!Engine.on || Engine.switching) return;
     const now = ilTime();
 
     // שעה עגולה חדשה? (לפי שעון ישראל)
     if (now.m === 0 && now.h !== Engine.lastBreakHour
       && (Engine.phase === 'talk' || Engine.phase === 'song')) {
-      hourlyBreak();
+      transition(hourlyBreak);
       return;
     }
 
     // נגמר זמן הדיבורים → שיר
     if (Engine.phase === 'talk' && Date.now() > Engine.talkDeadline) {
-      startSong(false);
+      Engine.talkDeadline = Infinity;
+      transition(() => startSong(false));
       return;
+    }
+
+    // נגמר זמן המוזיקה → חוזרים לדיבורים (אלא אם השיר ממש עומד להסתיים)
+    if (Engine.phase === 'song' && Date.now() > Engine.songDeadline) {
+      let remaining = Infinity;
+      try {
+        const d = YTBridge.player.getDuration();
+        if (d > 0) remaining = d - YTBridge.currentTime();
+      } catch (e) {}
+      if (remaining < 90) {
+        Engine.songDeadline = Date.now() + remaining * 1000 + 5000; // נותנים לו לסיים יפה
+      } else {
+        Engine.songDeadline = Infinity;
+        if (Engine.current) markHeard(Engine.current.videoId);
+        transition(() => Engine.continuousMusic ? startSong(true) : startTalk(false));
+        return;
+      }
     }
 
     // חדשות ארוכות מדי → חוזרים לדיבורים
     if (Engine.phase === 'news' && Date.now() > Engine.newsDeadline) {
-      startTalk(false);
+      Engine.newsDeadline = Infinity;
+      transition(() => startTalk(false));
       return;
+    }
+
+    // כלב שמירה: אם הנגן לא מתנגן ולא מושהה יותר מ-30 שניות — ממשיכים הלאה
+    if (Engine.phase === 'talk' || Engine.phase === 'song' || Engine.phase === 'news') {
+      try {
+        const st = YTBridge.player.getPlayerState();
+        if (st === YT.PlayerState.PLAYING || st === YT.PlayerState.PAUSED) {
+          Engine.lastAliveAt = Date.now();
+        } else if (Date.now() - Engine.lastAliveAt > 30000) {
+          Engine.lastAliveAt = Date.now();
+          if (!Engine.nudged) {
+            // ניסיון עדין קודם: אולי הדפדפן רק חסם ניגון אוטומטי
+            Engine.nudged = true;
+            YTBridge.resume();
+          } else {
+            status('ההשמעה נתקעה, ממשיכים הלאה… ⏭');
+            transition(() => { skip(); });
+          }
+          return;
+        }
+      } catch (e) {}
     }
 
     // שמירת מיקום שוטפת בדיבורים
@@ -358,17 +435,17 @@
       status('');
     }
     if (e.data === YT.PlayerState.ENDED) {
+      if (Engine.current) markHeard(Engine.current.videoId); // נשמע עד הסוף
       if (Engine.phase === 'song') {
-        if (Engine.continuousMusic) startSong(true);
-        else startTalk(false);
+        transition(() => Engine.continuousMusic ? startSong(true) : startTalk(false));
       } else if (Engine.phase === 'talk') {
         // הסרטון נגמר לפני הזמן — ממשיכים לסרטון דיבורים אחר
         if (Engine.currentTalk) delete Engine.positions[Engine.currentTalk.videoId];
         Engine.currentTalk = null;
         savePositions();
-        startTalk(true);
+        transition(() => startTalk(true));
       } else if (Engine.phase === 'news') {
-        startTalk(false);
+        transition(() => startTalk(false));
       }
     }
   }
@@ -407,6 +484,7 @@
   function powerOff(keepStatus) {
     Engine.on = false;
     saveTalkPosition();
+    Engine.currentTalk = null; // בהפעלה הבאה — תוכן חדש, לא אותו שיעור שוב
     clearInterval(Engine.tickTimer);
     if ('speechSynthesis' in window) speechSynthesis.cancel();
     YTBridge.stop();
@@ -417,14 +495,16 @@
 
   function skip() {
     if (!Engine.on) return;
+    // דילוג ידני = שמעת מספיק — לא נציע את הסרטון הזה שוב
+    if (Engine.current) markHeard(Engine.current.videoId);
     if (Engine.phase === 'talk') {
       if (Engine.currentTalk) delete Engine.positions[Engine.currentTalk.videoId];
       Engine.currentTalk = null;
-      startTalk(true);
+      return startTalk(true);
     } else if (Engine.phase === 'song') {
-      startSong(Engine.continuousMusic);
+      return startSong(Engine.continuousMusic);
     } else if (Engine.phase === 'news') {
-      startTalk(false);
+      return startTalk(false);
     }
   }
 

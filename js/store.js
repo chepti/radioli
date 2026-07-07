@@ -14,6 +14,8 @@
       newsEnabled: true,
       talkMinutes: 15,
       newsMinutes: 5,
+      songMinutes: 5,        // אורך מקסימלי לקטע מוזיקה
+      introSkipSeconds: 0,   // דילוג על פתיח בתחילת סרטון דיבורים
       skipShorts: true,
       announceSound: 'bells',   // פעמונים | נבל | מרימבה | רך | בלי
       transitionSoundName: 'soft',

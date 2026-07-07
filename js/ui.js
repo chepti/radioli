@@ -58,6 +58,7 @@
   // ---- וילון הנגן ----
   const sheet = $('playerSheet');
   $('sheetHandle').onclick = () => sheet.classList.toggle('collapsed');
+  $('btnCollapse').onclick = () => sheet.classList.toggle('collapsed');
   $('miniRow').addEventListener('click', (e) => {
     if (e.target.closest('button')) return;
     sheet.classList.toggle('collapsed');
@@ -224,6 +225,8 @@
     $('setTalkMin').value = s.talkMinutes;
     $('setNewsMin').value = s.newsMinutes;
     $('setSkipShorts').checked = s.skipShorts;
+    $('setSongMin').value = s.songMinutes;
+    $('setIntroSkip').value = s.introSkipSeconds;
     $('setAnnounceSound').value = s.announceSound;
     $('setTransSound').value = s.transitionSoundName;
   }
@@ -232,6 +235,8 @@
   $('setNews').onchange = (e) => Store.setSetting('newsEnabled', e.target.checked);
   $('setTalkMin').onchange = (e) => Store.setSetting('talkMinutes', Math.max(3, Math.min(60, +e.target.value || 15)));
   $('setNewsMin').onchange = (e) => Store.setSetting('newsMinutes', Math.max(1, Math.min(60, +e.target.value || 5)));
+  $('setSongMin').onchange = (e) => Store.setSetting('songMinutes', Math.max(1, Math.min(30, +e.target.value || 5)));
+  $('setIntroSkip').onchange = (e) => Store.setSetting('introSkipSeconds', Math.max(0, Math.min(120, +e.target.value || 0)));
   $('setSkipShorts').onchange = (e) => Store.setSetting('skipShorts', e.target.checked);
   $('setAnnounceSound').onchange = (e) => Store.setSetting('announceSound', e.target.value);
   $('setTransSound').onchange = (e) => Store.setSetting('transitionSoundName', e.target.value);

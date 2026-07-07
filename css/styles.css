@@ -25,6 +25,7 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: 'Varela Round', 'Segoe UI', system-ui, sans-serif;
+  overscroll-behavior-y: none; /* בלי רענון-במשיכה — שלא יקטע את השידור */
 }
 
 body {
@@ -405,7 +406,17 @@ input, select { font-family: inherit; }
   padding-bottom: env(safe-area-inset-bottom);
   direction: rtl;
 }
-.player-sheet.collapsed .sheet-body { display: none; }
+/* כיווץ בגובה (ולא בהסתרה) — כדי שנגן היוטיוב יישאר חי ולא ייעלם הווידאו */
+.sheet-body {
+  max-height: min(700px, 75vh);
+  overflow: hidden;
+  transition: max-height .3s ease, padding-bottom .3s ease;
+}
+.player-sheet.collapsed .sheet-body { max-height: 0; padding-bottom: 0; }
+
+.collapse-btn { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
+.collapse-btn .ic { transition: transform .3s; }
+.player-sheet.collapsed .collapse-btn .ic { transform: rotate(180deg); }
 
 .sheet-handle {
   display: block;
@@ -591,6 +602,7 @@ input, select { font-family: inherit; }
     width: 384px;
     border-radius: 24px;
   }
-  .player-sheet.collapsed .sheet-body { display: block; } /* בדסקטופ תמיד פתוח */
+  .player-sheet.collapsed .sheet-body { max-height: min(700px, 75vh); } /* בדסקטופ תמיד פתוח */
   .sheet-handle { display: none; }
+  .collapse-btn { display: none; }
 }
