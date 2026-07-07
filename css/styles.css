@@ -403,6 +403,37 @@ input, select { font-family: inherit; }
   background: #fff;
 }
 .m-recipe-item input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
+
+/* תוכניות קבועות */
+.program-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.program-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 10px 14px;
+}
+.program-item .p-time {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: var(--accent-deep);
+  direction: ltr;
+  flex: 0 0 auto;
+}
+.program-item .p-info { flex: 1; min-width: 0; }
+.program-item .p-info small { color: var(--ink-soft); }
+.program-item .p-del { border: none; background: none; color: var(--ink-soft); opacity: .7; padding: 4px; }
+.program-item .p-del:hover { opacity: 1; color: var(--accent-deep); }
+#addProgramForm input[type="time"],
+#addProgramForm input[type="number"] {
+  border: 2px solid var(--peach);
+  border-radius: 14px;
+  padding: 10px;
+  background: var(--bg);
+  color: var(--ink);
+}
+#addProgramForm input[type="number"] { width: 70px; text-align: center; }
 .mood-item .m-del { border: none; background: none; color: var(--ink-soft); opacity: .7; padding: 4px; }
 .mood-item .m-del:hover { opacity: 1; color: var(--accent-deep); }
 
@@ -545,6 +576,8 @@ input, select { font-family: inherit; }
 }
 
 .skip-btn { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
+.pause-btn { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
+.pause-btn.is-paused { background: var(--accent); border-color: var(--accent); }
 
 .sheet-body { padding: 0 16px 16px; }
 

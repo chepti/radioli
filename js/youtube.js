@@ -177,10 +177,19 @@
     });
   }
 
+  // מביא את סרטון השידור החי הנוכחי של ערוץ (או האחרון אם אין חי)
+  async function fetchLive(channelId) {
+    const res = await proxyGet({ live: channelId });
+    const json = await res.json();
+    if (!json.videoId) throw new Error(json.error || 'no live');
+    return json; // {videoId, live, title}
+  }
+
   window.YTBridge = {
     parseInput,
     resolveHandle,
     fetchFeed,
+    fetchLive,
     classifyShorts,
     isShort,
     loadPlayer,
@@ -192,6 +201,10 @@
     },
     pause() { if (player && player.pauseVideo) player.pauseVideo(); },
     resume() { if (player && player.playVideo) player.playVideo(); },
+    isPlaying() {
+      try { return player && player.getPlayerState && player.getPlayerState() === 1; }
+      catch (e) { return false; }
+    },
     stop() { if (player && player.stopVideo) player.stopVideo(); },
     mute() { if (player && player.mute) player.mute(); },
     unMute() { if (player && player.unMute) player.unMute(); },

@@ -52,6 +52,42 @@ if (isset($_GET['feed'])) {
     exit;
 }
 
+// ---- שידור חי של ערוץ ----
+// proxy.php?live=UC...  ->  {"videoId":"...","live":true|false,"title":"..."}
+if (isset($_GET['live'])) {
+    $id = trim($_GET['live']);
+    if (!preg_match('/^UC[\w-]{22}$/', $id)) fail('bad channel id');
+    $html = fetch_url('https://www.youtube.com/channel/' . $id . '/live');
+    $vid = null;
+    // 1) canonical ל-watch (כשקיים ותקין) 2) הסרטון הראשי של עמוד /live
+    if ($html !== null && preg_match('#rel="canonical" href="https://www\.youtube\.com/watch\?v=([\w-]{11})"#', $html, $m)) {
+        $vid = $m[1];
+    } elseif ($html !== null && preg_match('/"videoId":"([\w-]{11})"/', $html, $m)) {
+        $vid = $m[1];
+    }
+    // שידור חי כרגע: מחרוזות שמופיעות רק בעמוד של סרטון שמשודר חי
+    $isLiveNow = $html !== null && (
+        strpos($html, '"isLive":true') !== false
+        || strpos($html, 'hlsManifestUrl') !== false
+    );
+    $title = '';
+    if ($html !== null && preg_match('/<meta property="og:title" content="([^"]*)"/', $html, $m)) {
+        $title = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
+    }
+    // נפילה: אם לא נמצא כלום — הסרטון האחרון של הערוץ
+    if (!$vid) {
+        $rss = fetch_url('https://www.youtube.com/feeds/videos.xml?channel_id=' . $id);
+        if ($rss !== null && preg_match('#<yt:videoId>([\w-]{11})</yt:videoId>#', $rss, $m)) {
+            $vid = $m[1];
+            $isLiveNow = false;
+        }
+    }
+    if (!$vid) fail('no video found', 404);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['videoId' => $vid, 'live' => $isLiveNow, 'title' => $title], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // ---- קריינות (Google Translate TTS, עברית) ----
 // proxy.php?tts=<טקסט>  ->  audio/mpeg
 if (isset($_GET['tts'])) {

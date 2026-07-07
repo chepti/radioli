@@ -38,6 +38,8 @@
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
     <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></symbol>
+    <symbol id="i-live" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -179,6 +181,22 @@
     </section>
 
     <section class="card">
+      <div class="card-head">
+        <h2>📅 תוכניות קבועות
+          <button type="button" class="help-dot" data-help="פתיחה אוטומטית של שידור חי מערוץ, בשעה קבועה. למשל: כל ערב ב-21:00 ייפתח השידור החי של הערוץ שבחרת. עובד כשהרדיו מופעל.">?</button>
+        </h2>
+      </div>
+      <form id="addProgramForm" class="add-form">
+        <input type="text" id="progInput" placeholder="קישור לערוץ / @כינוי" required>
+        <input type="time" id="progTime" value="21:00" required>
+        <input type="number" id="progDur" min="0" max="240" step="5" value="60" title="דקות (0 = עד סוף השידור)">
+        <button type="submit" class="btn primary" id="btnAddProgram"><svg class="ic"><use href="#i-plus"/></svg> הוספה</button>
+      </form>
+      <p class="form-status" id="progStatus"></p>
+      <ul class="program-list" id="programList"></ul>
+    </section>
+
+    <section class="card">
       <h2>🕐 איך נראית שעה ברדיולי</h2>
       <ol class="timeline">
         <li><span class="t-emoji">🕰️</span> בהדלקה ובשעה עגולה — הכרזת שעה</li>
@@ -209,6 +227,7 @@
         <div class="mini-title" id="npTitle">רדיולי מחכה לך 🌸</div>
         <div class="mini-sub" id="npChannel"></div>
       </div>
+      <button class="icon-btn pause-btn" id="btnPause" title="השהיה" hidden><svg class="ic"><use href="#i-pause"/></svg></button>
       <button class="icon-btn skip-btn" id="btnSkip" title="דילוג"><svg class="ic"><use href="#i-skip"/></svg></button>
       <button class="icon-btn collapse-btn" id="btnCollapse" title="פתיחה / סגירה"><svg class="ic"><use href="#i-chevron"/></svg></button>
     </div>

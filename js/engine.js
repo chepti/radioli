@@ -20,8 +20,12 @@
     switching: false,     // מגן מפני מעברים כפולים במקביל
     songDeadline: 0,
     lastAliveAt: 0,       // כלב שמירה: מתי לאחרונה הנגן באמת ניגן
+    paused: false,        // השהיה יזומה של המשתמש
+    pausedAt: 0,
+    programDeadline: 0,
+    lastProgramFire: '',  // מפתח ייחודי לתוכנית שכבר הופעלה (למנוע כפילות)
     tickTimer: null,
-    ui: { onPhase() {}, onTrack() {}, onStatus() {} },
+    ui: { onPhase() {}, onTrack() {}, onStatus() {}, onPaused() {} },
   };
 
   function loadPositions() {
@@ -384,6 +388,23 @@
     }
   }
 
+  async function startLiveProgram(prog) {
+    saveTalkPosition();
+    setPhase('live');
+    status('🔴 שידור חי: ' + (prog.title || ''));
+    Engine.programDeadline = prog.durationMin ? Date.now() + prog.durationMin * 60 * 1000 : Infinity;
+    try {
+      const live = await YTBridge.fetchLive(prog.ytId);
+      const label = prog.title || live.title || 'שידור חי';
+      playVideo({ videoId: live.videoId, title: label, channelTitle: live.live ? '🔴 חי עכשיו' : 'לא בשידור כרגע' }, 0);
+    } catch (e) {
+      console.warn('live program failed', e);
+      status('לא הצלחתי לפתוח את השידור החי 😢 ממשיכים');
+      Engine.programDeadline = Infinity;
+      startTalk(false);
+    }
+  }
+
   async function hourlyBreak() {
     Engine.lastBreakHour = ilTime().h;
     saveTalkPosition();
@@ -410,9 +431,41 @@
     try { await fn(); } finally { Engine.switching = false; }
   }
 
+  // תוכנית קבועה שהגיע זמנה?
+  function dueProgram(now, dayKey) {
+    const progs = Store.data.programs || [];
+    for (const p of progs) {
+      if (p.hour !== now.h || p.minute !== now.m) continue;
+      if (p.days && p.days.length && !p.days.includes(new Date().getDay())) continue;
+      const fireKey = p.id + '@' + dayKey + ' ' + now.h + ':' + now.m;
+      if (Engine.lastProgramFire === fireKey) continue;
+      Engine.lastProgramFire = fireKey;
+      return p;
+    }
+    return null;
+  }
+
   function tick() {
-    if (!Engine.on || Engine.switching) return;
+    if (!Engine.on || Engine.switching || Engine.paused) return;
     const now = ilTime();
+    const dayKey = new Date().toDateString();
+
+    // תוכנית קבועה (שידור חי) — גובר על הכול
+    const prog = dueProgram(now, dayKey);
+    if (prog) {
+      transition(() => startLiveProgram(prog));
+      return;
+    }
+
+    // שידור חי חורג מהזמן שהוקצב → חוזרים ללוח הרגיל
+    if (Engine.phase === 'live' && Engine.programDeadline !== Infinity && Date.now() > Engine.programDeadline) {
+      Engine.programDeadline = Infinity;
+      transition(() => startTalk(false));
+      return;
+    }
+
+    // בשידור חי לא מפעילים את שאר לוח השידורים
+    if (Engine.phase === 'live') { Engine.lastAliveAt = Date.now(); return; }
 
     // שעה עגולה חדשה? (לפי שעון ישראל)
     if (now.m === 0 && now.h !== Engine.lastBreakHour
@@ -507,6 +560,11 @@
       status('');
     }
     if (e.data === YT.PlayerState.ENDED) {
+      // שידור חי שהסתיים → חוזרים ללוח הרגיל
+      if (Engine.phase === 'live') {
+        Engine.programDeadline = Infinity;
+        return transition(() => startTalk(false));
+      }
       // דיבורים שנשמעו עד הסוף לא חוזרים; שירים כן מותר לנגן שוב (רק דילוג חוסם אותם)
       if (Engine.phase !== 'song' && Engine.current) markHeard(Engine.current.videoId);
       if (Engine.phase === 'song') {
@@ -559,6 +617,8 @@
 
   function powerOff(keepStatus) {
     Engine.on = false;
+    Engine.paused = false;
+    Engine.ui.onPaused(false);
     saveTalkPosition();
     Engine.currentTalk = null; // בהפעלה הבאה — תוכן חדש, לא אותו שיעור שוב
     clearInterval(Engine.tickTimer);
@@ -569,9 +629,31 @@
     if (!keepStatus) status('');
   }
 
+  // השהיה / המשך יזומים. בהשהיה מקפיאים את מועדי המעבר כדי שלא "יקפוץ" בחזרה.
+  function togglePause() {
+    if (!Engine.on) return Engine.paused;
+    if (Engine.paused) {
+      const delta = Date.now() - Engine.pausedAt;
+      ['talkDeadline', 'songDeadline', 'newsDeadline', 'programDeadline'].forEach(k => {
+        if (isFinite(Engine[k])) Engine[k] += delta;
+      });
+      Engine.paused = false;
+      Engine.lastAliveAt = Date.now();
+      Engine.nudged = false;
+      YTBridge.resume();
+    } else {
+      Engine.paused = true;
+      Engine.pausedAt = Date.now();
+      YTBridge.pause();
+    }
+    Engine.ui.onPaused(Engine.paused);
+    return Engine.paused;
+  }
+
   // דילוג רגיל — רק להפעם. המיקום נשמר, והסרטון עדיין יכול לחזור בעתיד.
   function skip() {
     if (!Engine.on) return;
+    if (Engine.phase === 'live') { Engine.programDeadline = Infinity; return startTalk(false); }
     if (Engine.phase === 'talk') {
       saveTalkPosition();
       Engine.currentTalk = null;
@@ -610,6 +692,8 @@
   window.Engine = Engine;
   Engine.powerOn = powerOn;
   Engine.powerOff = powerOff;
+  Engine.togglePause = togglePause;
+  Engine.playProgram = (prog) => { if (Engine.on) transition(() => startLiveProgram(prog)); };
   Engine.skip = skip;
   Engine.banNow = banCurrent;
   Engine.resetBlocked = () => {

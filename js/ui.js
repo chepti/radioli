@@ -9,6 +9,7 @@
     news: { text: '📰 חדשות', cls: 'news' },
     talk: { text: '🗣️ דיבורים', cls: 'live' },
     song: { text: '🎵 שיר', cls: 'live' },
+    live: { text: '🔴 שידור חי', cls: 'news' },
   };
 
   const ROLE_LABELS = { music: '🎵 מוזיקה', talk: '🗣️ דיבורים', news: '📰 חדשות' };
@@ -277,9 +278,81 @@
     $('moodEmoji').value = '';
   };
 
+  // ---- תוכניות קבועות ----
+  function renderPrograms() {
+    const list = $('programList');
+    if (!list) return;
+    list.innerHTML = '';
+    const progs = Store.data.programs || [];
+    if (!progs.length) {
+      const li = document.createElement('li');
+      li.className = 'hint';
+      li.textContent = 'אין תוכניות קבועות. אפשר להוסיף שידור חי שייפתח אוטומטית בשעה שתקבעי.';
+      list.appendChild(li);
+      return;
+    }
+    progs.forEach(p => {
+      const li = document.createElement('li');
+      li.className = 'program-item';
+      const time = document.createElement('span');
+      time.className = 'p-time';
+      time.textContent = String(p.hour).padStart(2, '0') + ':' + String(p.minute).padStart(2, '0');
+      const info = document.createElement('span');
+      info.className = 'p-info';
+      const dur = p.durationMin ? p.durationMin + ' דק\'' : 'עד סוף השידור';
+      info.innerHTML = '<b>' + (p.title || p.ytId) + '</b><br><small>🔴 שידור חי · ' + dur + ' · כל יום</small>';
+      const del = document.createElement('button');
+      del.className = 'p-del';
+      del.innerHTML = icon('trash');
+      del.onclick = () => { if (confirm('למחוק את התוכנית "' + (p.title || '') + '"?')) Store.removeProgram(p.id); };
+      li.append(time, info, del);
+      list.appendChild(li);
+    });
+  }
+
+  $('addProgramForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const text = $('progInput').value.trim();
+    const timeVal = $('progTime').value;
+    const btn = $('btnAddProgram');
+    const statusEl = $('progStatus');
+    if (!text || !timeVal) return;
+
+    const parsed = YTBridge.parseInput(text);
+    if (!parsed) { statusEl.textContent = 'לא הצלחתי להבין את הקישור 😅'; return; }
+
+    btn.disabled = true;
+    statusEl.textContent = 'בודקת את הערוץ…';
+    try {
+      let resolved = parsed;
+      if (parsed.kind === 'handle') resolved = await YTBridge.resolveHandle(parsed);
+      if (resolved.kind !== 'channel' || !resolved.ytId) throw new Error('צריך ערוץ (לא פלייליסט)');
+
+      let title = resolved.title || '';
+      if (!title) {
+        try { const feed = await YTBridge.fetchFeed('channel', resolved.ytId); title = feed.title || ''; } catch (e) {}
+      }
+      const [h, m] = timeVal.split(':').map(Number);
+      Store.addProgram({
+        ytId: resolved.ytId,
+        title: title || text,
+        hour: h, minute: m,
+        durationMin: Math.max(0, Math.min(240, +$('progDur').value || 60)),
+      });
+      $('progInput').value = '';
+      statusEl.textContent = '';
+      toast('נוספה תוכנית: ' + (title || text) + ' 📅');
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent = 'לא הצלחתי להוסיף 😢 ' + (err.message && err.message.length < 60 ? err.message : 'בדקי את הקישור');
+    }
+    btn.disabled = false;
+  };
+
   // ---- הגדרות כלליות ----
   function renderSettings() {
     renderMoods();
+    renderPrograms();
     const s = Store.data.settings;
     $('setAnnounce').checked = s.announceHour;
     $('setNews').checked = s.newsEnabled;
@@ -365,11 +438,20 @@
       $('npTitle').textContent = 'רדיולי מחכה לך 🌸';
       $('npChannel').textContent = '';
       $('playerCover').classList.remove('hidden');
+      $('btnPause').hidden = true;
     } else {
       btn.classList.add('on');
       iconEl.innerHTML = icon('power', 'ic-lg');
       $('playerCover').classList.add('hidden');
+      $('btnPause').hidden = false;
     }
+  };
+
+  Engine.ui.onPaused = (paused) => {
+    const b = $('btnPause');
+    b.innerHTML = icon(paused ? 'play' : 'pause');
+    b.title = paused ? 'המשך' : 'השהיה';
+    b.classList.toggle('is-paused', paused);
   };
 
   Engine.ui.onTrack = (v) => {
@@ -394,6 +476,7 @@
       await Engine.powerOn();
     }
   };
+  $('btnPause').onclick = () => Engine.togglePause();
   $('btnSkip').onclick = () => Engine.skip();
   $('btnBanNow').onclick = () => Engine.banNow();
   $('btnSongNow').onclick = () => Engine.songNow();

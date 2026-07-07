@@ -22,6 +22,7 @@
       videoMode: 'normal', // normal | mini | audio
     },
     activeMood: null, // null = הכול
+    programs: [], // {id, ytId(UC), title, hour, minute, days:[0-6] ריק=כל יום, durationMin}
   };
 
   let data = load();
@@ -168,6 +169,24 @@
     },
     setActiveMood(id) {
       data.activeMood = id;
+      persist();
+    },
+
+    // ---- תוכניות קבועות (שידור חי בשעה קבועה) ----
+    addProgram(p) {
+      p.id = uid();
+      p.days = p.days || [];
+      if (!data.programs) data.programs = [];
+      data.programs.push(p);
+      persist();
+      return p;
+    },
+    updateProgram(id, patch) {
+      const p = data.programs.find(x => x.id === id);
+      if (p) { Object.assign(p, patch); persist(); }
+    },
+    removeProgram(id) {
+      data.programs = (data.programs || []).filter(p => p.id !== id);
       persist();
     },
 

@@ -1,5 +1,5 @@
 // ===== רדיולי — Service Worker =====
-const CACHE = 'radioli-v12';
+const CACHE = 'radioli-v13';
 const SHELL = [
   './',
   'index.html',
