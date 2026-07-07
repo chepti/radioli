@@ -375,7 +375,6 @@
         Engine.songDeadline = Date.now() + remaining * 1000 + 5000; // נותנים לו לסיים יפה
       } else {
         Engine.songDeadline = Infinity;
-        if (Engine.current) markHeard(Engine.current.videoId);
         transition(() => Engine.continuousMusic ? startSong(true) : startTalk(false));
         return;
       }
@@ -435,7 +434,8 @@
       status('');
     }
     if (e.data === YT.PlayerState.ENDED) {
-      if (Engine.current) markHeard(Engine.current.videoId); // נשמע עד הסוף
+      // דיבורים שנשמעו עד הסוף לא חוזרים; שירים כן מותר לנגן שוב (רק דילוג חוסם אותם)
+      if (Engine.phase !== 'song' && Engine.current) markHeard(Engine.current.videoId);
       if (Engine.phase === 'song') {
         transition(() => Engine.continuousMusic ? startSong(true) : startTalk(false));
       } else if (Engine.phase === 'talk') {

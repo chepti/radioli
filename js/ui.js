@@ -15,12 +15,12 @@
 
   // ---- טוסט ----
   let toastTimer;
-  function toast(msg) {
+  function toast(msg, ms) {
     const el = $('toast');
     el.textContent = msg;
     el.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { el.hidden = true; }, 3200);
+    toastTimer = setTimeout(() => { el.hidden = true; }, ms || 3200);
   }
 
   // ---- שעון (שעון ישראל) ----
@@ -52,8 +52,19 @@
     $('viewSettings').hidden = name !== 'settings';
     window.scrollTo({ top: 0 });
   }
-  $('btnSettings').onclick = () => { showView('settings'); renderSettings(); };
+  // גלגל השיניים הוא מתג: לחיצה נוספת חוזרת לרדיו; גם הלוגו מוביל הביתה
+  $('btnSettings').onclick = () => {
+    if ($('viewSettings').hidden) { showView('settings'); renderSettings(); }
+    else showView('radio');
+  };
   $('btnBackToRadio').onclick = () => showView('radio');
+  $('logoHome').onclick = () => showView('radio');
+
+  // עיגולי עזרה — לחיצה מציגה את ההסבר
+  document.addEventListener('click', (e) => {
+    const dot = e.target.closest('.help-dot');
+    if (dot) toast(dot.dataset.help, 6000);
+  });
 
   // ---- וילון הנגן ----
   const sheet = $('playerSheet');
@@ -95,7 +106,7 @@
     if (!Store.data.channels.length) {
       const li = document.createElement('li');
       li.className = 'hint';
-      li.textContent = 'עוד אין ערוצים 🙈 מדביקים למעלה קישור לערוץ או פלייליסט מיוטיוב — וזה כל מה שצריך כדי שהרדיו יעבוד.';
+      li.textContent = 'עוד אין ערוצים 🙈 מדביקים למעלה קישור מיוטיוב';
       list.appendChild(li);
       return;
     }
@@ -229,6 +240,7 @@
     $('setIntroSkip').value = s.introSkipSeconds;
     $('setAnnounceSound').value = s.announceSound;
     $('setTransSound').value = s.transitionSoundName;
+    renderAccount();
   }
 
   $('setAnnounce').onchange = (e) => Store.setSetting('announceHour', e.target.checked);
@@ -243,22 +255,25 @@
   $('prevAnnounceSound').onclick = () => Engine.previewSound($('setAnnounceSound').value);
   $('prevTransSound').onclick = () => Engine.previewSound($('setTransSound').value);
 
-  // ---- חשבון: רק דרך הכפתור בפינה ----
+  // ---- חשבון: כפתור בפינה + שורת התנתקות בהגדרות ----
   function renderAccount() {
     const btn = $('btnAccount');
     const user = Store.user;
     if (user) {
       btn.classList.add('logged-in');
-      btn.title = 'מחוברת: ' + (user.displayName || user.email) + ' — לחיצה להתנתקות';
+      btn.title = 'מחוברת: ' + (user.displayName || user.email);
       if (user.photoURL) {
         btn.style.backgroundImage = 'url("' + user.photoURL + '")';
         btn.innerHTML = '';
       }
+      $('rowLogout').hidden = false;
+      $('logoutName').textContent = '☁️ מחוברת: ' + (user.displayName || user.email);
     } else {
       btn.classList.remove('logged-in');
       btn.style.backgroundImage = '';
       btn.innerHTML = icon('user');
       btn.title = 'התחברות עם Google';
+      $('rowLogout').hidden = true;
     }
   }
 
@@ -268,10 +283,7 @@
       return;
     }
     if (Store.user) {
-      if (confirm('להתנתק מהחשבון של ' + (Store.user.displayName || Store.user.email) + '?')) {
-        await Store.logout();
-        toast('התנתקת. הנתונים נשארים גם על המכשיר 💾');
-      }
+      toast('☁️ מחוברת בתור ' + (Store.user.displayName || Store.user.email) + ' — התנתקות דרך ההגדרות');
     } else {
       try {
         await Store.login();
@@ -281,6 +293,12 @@
         toast('ההתחברות נכשלה 😢 נסי שוב');
       }
     }
+  };
+
+  $('btnLogout').onclick = async () => {
+    await Store.logout();
+    renderAccount();
+    toast('התנתקת. הנתונים נשארים גם על המכשיר 💾');
   };
 
   // ---- חיבור למנוע ----

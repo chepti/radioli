@@ -30,7 +30,7 @@ html, body {
 
 body {
   min-height: 100vh;
-  padding-bottom: 130px; /* מקום לוילון המכווץ */
+  padding-bottom: 175px; /* מקום לוילון המכווץ */
   background-image: radial-gradient(rgba(255, 122, 89, .07) 1.5px, transparent 1.5px);
   background-size: 26px 26px;
 }
@@ -72,12 +72,16 @@ input, select { font-family: inherit; }
 .logo {
   font-size: 1.1rem;
   font-weight: bold;
+  font-family: inherit;
   display: flex;
   align-items: center;
   gap: 8px;
   background: rgba(255,255,255,.16);
+  border: none;
+  color: #fff;
   border-radius: 999px;
   padding: 6px 14px;
+  cursor: pointer;
 }
 .logo .ic { width: 20px; height: 20px; }
 
@@ -201,6 +205,37 @@ input, select { font-family: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* עיגול עזרה קטן — לחיצה מציגה הסבר */
+.help-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--peach);
+  background: #fff;
+  color: var(--ink-soft);
+  font-size: .75rem;
+  font-weight: bold;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+}
+.help-dot:hover { border-color: var(--accent); color: var(--accent); }
+.player-sheet .help-dot {
+  border-color: rgba(255, 217, 199, .4);
+  background: rgba(255,255,255,.08);
+  color: #ffd9c7;
+  align-self: center;
+}
+
+.player-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 
 .timeline {

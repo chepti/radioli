@@ -40,7 +40,7 @@
   </svg>
 
   <header class="topbar">
-    <div class="logo"><svg class="ic"><use href="#i-radio"/></svg><span>רדיולי</span></div>
+    <button class="logo" id="logoHome" title="לעמוד הראשי"><svg class="ic"><use href="#i-radio"/></svg><span>רדיולי</span></button>
     <div class="clock" id="clock">--:--</div>
     <div class="topbar-actions">
       <button id="btnAccount" class="icon-btn" title="התחברות"><svg class="ic"><use href="#i-user"/></svg></button>
@@ -65,8 +65,9 @@
 
     <section class="card">
       <div class="card-head">
-        <h2><svg class="ic ic-head"><use href="#i-radio"/></svg> הערוצים שלי</h2>
-        <p class="hint">מדביקים קישור לערוץ יוטיוב, לפלייליסט או כינוי (כמו&nbsp;<span dir="ltr">@kan11</span>) — ובוחרים תפקיד.</p>
+        <h2><svg class="ic ic-head"><use href="#i-radio"/></svg> הערוצים שלי
+          <button type="button" class="help-dot" data-help="מדביקים קישור לערוץ יוטיוב, לפלייליסט או @כינוי — ובוחרים תפקיד: מוזיקה, דיבורים או חדשות. אפשר גם לתייג כל ערוץ למצבי רוח.">?</button>
+        </h2>
       </div>
       <form id="addChannelForm" class="add-form">
         <input type="text" id="channelInput" placeholder="קישור לערוץ / פלייליסט / @כינוי" required>
@@ -88,8 +89,9 @@
 
     <section class="card">
       <div class="card-head">
-        <h2>🌈 מצבי רוח</h2>
-        <p class="hint">יוצרים מצב רוח, ואז מסמנים בכל ערוץ (בעמוד הראשי) לאילו מצבי רוח הוא מתאים. בזמן האזנה מחליפים מצב רוח בלחיצה.</p>
+        <h2>🌈 מצבי רוח
+          <button type="button" class="help-dot" data-help="יוצרים מצב רוח, ומסמנים בערוצים (בעמוד הראשי) מה מתאים לו. בזמן האזנה מחליפים מצב רוח בלחיצה — והרדיו מנגן רק מהערוצים המתאימים.">?</button>
+        </h2>
       </div>
       <form id="addMoodForm" class="add-form">
         <input type="text" id="moodEmoji" class="emoji-input" placeholder="🙂" maxlength="4">
@@ -156,15 +158,19 @@
             <button type="button" class="btn small" id="prevTransSound" title="השמעה">🔊</button>
           </span>
         </div>
+        <div class="setting-row" id="rowLogout" hidden>
+          <span id="logoutName"></span>
+          <button type="button" class="btn small" id="btnLogout">התנתקות</button>
+        </div>
       </div>
     </section>
 
     <section class="card">
       <h2>🕐 איך נראית שעה ברדיולי</h2>
       <ol class="timeline">
-        <li><span class="t-emoji">🕰️</span> בשעה עגולה — אומרים מה השעה</li>
-        <li><span class="t-emoji">📰</span> מהדורת חדשות קצרה מהערוץ שבחרת</li>
-        <li><span class="t-emoji">🗣️</span> כרבע שעה של דיבורים</li>
+        <li><span class="t-emoji">🕰️</span> בהדלקה ובשעה עגולה — הכרזת שעה</li>
+        <li><span class="t-emoji">📰</span> חדשות קצרות (אם הגדרת ערוץ חדשות)</li>
+        <li><span class="t-emoji">🗣️</span> דיבורים — כמה דקות שקבעת למעלה</li>
         <li><span class="t-emoji">🎵</span> הפסקה לשיר</li>
         <li><span class="t-emoji">🔁</span> וחוזרים לדיבורים…</li>
       </ol>
@@ -195,17 +201,20 @@
     </div>
 
     <div class="sheet-body">
+      <div class="player-tools">
+        <button class="btn small dark" id="btnVideoMode" title="החלפת תצוגה: וידאו / קטן / האזנה בלבד"><svg class="ic"><use href="#i-monitor"/></svg> וידאו</button>
+      </div>
       <div class="player-wrap" id="playerWrap">
         <div id="ytPlayer"></div>
         <div class="player-cover" id="playerCover">📻</div>
       </div>
-      <div class="audio-note" id="audioNote" hidden>🎧 מצב האזנה בלבד — הווידאו מוסתר</div>
+      <div class="audio-note" id="audioNote" hidden>🎧 האזנה בלבד</div>
       <div class="sheet-moods" id="sheetMoods"></div>
       <div class="quick-actions">
-        <button class="btn small dark" id="btnVideoMode" title="גודל תצוגת וידאו"><svg class="ic"><use href="#i-monitor"/></svg> וידאו</button>
         <button class="btn small dark" id="btnSongNow"><svg class="ic"><use href="#i-music"/></svg> שיר</button>
         <button class="btn small dark" id="btnTalkNow"><svg class="ic"><use href="#i-mic"/></svg> דיבורים</button>
         <button class="btn small dark" id="btnNewsNow"><svg class="ic"><use href="#i-news"/></svg> חדשות</button>
+        <button type="button" class="help-dot" data-help="החלפה חד-פעמית: מנגן שיר / דיבורים / חדשות עכשיו, ואז לוח השידורים ממשיך כרגיל.">?</button>
       </div>
       <p class="engine-status" id="engineStatus"></p>
     </div>
