@@ -1,7 +1,20 @@
 // ===== רדיולי — יוטיוב: פרוקסי RSS, זיהוי קלט, ונגן =====
 (function () {
-  const feedCache = new Map(); // ytId -> {at, title, videos}
   const FEED_TTL = 30 * 60 * 1000;
+  const FEED_LS_KEY = 'radioli-feeds-v1';
+
+  // מטמון פידים קבוע (שורד רענון); בפיד שנכשל — עדיף עותק ישן מכלום
+  let feedStore = {};
+  try { feedStore = JSON.parse(localStorage.getItem(FEED_LS_KEY)) || {}; } catch (e) {}
+
+  function saveFeedStore() {
+    const keys = Object.keys(feedStore);
+    if (keys.length > 40) {
+      keys.sort((a, b) => feedStore[a].at - feedStore[b].at);
+      keys.slice(0, keys.length - 40).forEach(k => delete feedStore[k]);
+    }
+    try { localStorage.setItem(FEED_LS_KEY, JSON.stringify(feedStore)); } catch (e) {}
+  }
 
   async function proxyGet(params) {
     const url = window.RADIOLI_PROXY + '?' + new URLSearchParams(params).toString();
@@ -58,16 +71,39 @@
     return { title, videos };
   }
 
-  // מביא את הסרטונים האחרונים של ערוץ/פלייליסט (עם מטמון)
+  async function fetchFeedRaw(kind, id) {
+    const res = await proxyGet({ feed: kind, id });
+    return parseFeedXml(await res.text());
+  }
+
+  // מביא את הסרטונים האחרונים של ערוץ/פלייליסט (עם מטמון קבוע ונפילה לעותק ישן)
   async function fetchFeed(kind, ytId, force) {
     const cacheKey = kind + ':' + ytId;
-    const cached = feedCache.get(cacheKey);
+    const cached = feedStore[cacheKey];
     if (!force && cached && Date.now() - cached.at < FEED_TTL) return cached;
-    const res = await proxyGet({ feed: kind, id: ytId });
-    const parsed = parseFeedXml(await res.text());
-    const out = { at: Date.now(), title: parsed.title, videos: parsed.videos };
-    feedCache.set(cacheKey, out);
-    return out;
+    try {
+      let out = null;
+      if (kind === 'channel') {
+        // UULF = פלייליסט הסרטונים הארוכים של הערוץ — בלי שורטס במקור
+        try {
+          const lf = await fetchFeedRaw('playlist', 'UULF' + ytId.slice(2));
+          if (lf.videos.length) {
+            out = { title: (lf.videos[0] && lf.videos[0].channelTitle) || lf.title, videos: lf.videos, shortsFree: true };
+          }
+        } catch (e) { /* אין UULF לערוץ הזה — נופלים לפיד הרגיל */ }
+      }
+      if (!out) {
+        const f = await fetchFeedRaw(kind, ytId);
+        out = { title: f.title, videos: f.videos, shortsFree: false };
+      }
+      out.at = Date.now();
+      feedStore[cacheKey] = out;
+      saveFeedStore();
+      return out;
+    } catch (e) {
+      if (cached) return cached; // הרשת נכשלה — משתמשים בעותק הישן
+      throw e;
+    }
   }
 
   // ---- זיהוי שורטס ----

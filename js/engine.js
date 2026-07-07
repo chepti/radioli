@@ -207,7 +207,10 @@
     const pools = await Promise.all(channels.map(async (ch) => {
       try {
         const feed = await YTBridge.fetchFeed(ch.kind, ch.ytId);
-        return feed.videos.map(v => Object.assign({}, v, { channelTitle: v.channelTitle || feed.title || ch.title }));
+        return feed.videos.map(v => Object.assign({}, v, {
+          channelTitle: v.channelTitle || feed.title || ch.title,
+          needShortCheck: !feed.shortsFree,
+        }));
       } catch (e) {
         console.warn('feed failed for', ch.title, e);
         return [];
@@ -215,8 +218,10 @@
     }));
     let all = pools.flat().filter(v => !Engine.blocked[v.videoId]);
     if (Store.data.settings.skipShorts && all.length) {
-      await YTBridge.classifyShorts(all.map(v => v.videoId));
-      const filtered = all.filter(v => !YTBridge.isShort(v.videoId));
+      // פידים של ערוצים כבר נקיים משורטס (UULF); בודקים רק פלייליסטים ידניים
+      const toCheck = all.filter(v => v.needShortCheck);
+      if (toCheck.length) await YTBridge.classifyShorts(toCheck.map(v => v.videoId));
+      const filtered = all.filter(v => !v.needShortCheck || !YTBridge.isShort(v.videoId));
       if (filtered.length) all = filtered; // אם הכול שורטס — עדיף שורט משתיקה
     }
     // מסננים סרטונים שכבר נשמעו; אם הכול נשמע — מוותרים על הסינון (שיהיה מה לנגן)
