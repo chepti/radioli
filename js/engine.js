@@ -271,8 +271,14 @@
       if (v) pos = Engine.positions[v.videoId] || 0;
     }
     if (!v) {
-      // אין ערוצי דיבורים — רדיו מוזיקה רצוף
-      return startSong(true);
+      const hasTalkChannels = Store.channelsFor('talk').length > 0;
+      if (hasTalkChannels) {
+        // יש ערוצי דיבורים אבל לא הצלחנו להביא מהם כלום (תקלה זמנית / הכול חסום)
+        // מנגנים שיר אחד ובסופו ננסה דיבורים שוב — לא נופלים למוזיקה לתמיד
+        status('לא הצלחתי להביא דיבורים כרגע — שיר וננסה שוב 🎙️');
+        return startSong(false);
+      }
+      return startSong(true); // אין בכלל ערוצי דיבורים — רדיו מוזיקה רצוף
     }
     if (!pos) pos = Store.data.settings.introSkipSeconds || 0; // דילוג על פתיח
     Engine.currentTalk = v;
@@ -303,19 +309,26 @@
 
   async function startNews() {
     const pool = Store.channelsFor('news');
-    if (!pool.length) return startTalk(false);
+    if (!pool.length) {
+      status('לא הוגדר ערוץ חדשות — ממשיכים 📰');
+      return startTalk(false);
+    }
     saveTalkPosition();
     try {
       const ch = pool[0];
       const feed = await YTBridge.fetchFeed(ch.kind, ch.ytId, true); // תמיד טרי
-      const latest = feed.videos[0];
-      if (!latest) return startTalk(false);
+      const latest = feed.videos.find(v => !Engine.blocked[v.videoId]) || feed.videos[0];
+      if (!latest) {
+        status('לא נמצאו חדשות בערוץ 😢');
+        return startTalk(false);
+      }
       setPhase('news');
       Engine.newsDeadline = Date.now() + Store.data.settings.newsMinutes * 60 * 1000;
       status('מהדורת חדשות 📰');
       playVideo(Object.assign({}, latest, { channelTitle: latest.channelTitle || feed.title }), 0);
     } catch (e) {
       console.warn('news failed', e);
+      status('לא הצלחתי להביא חדשות כרגע 😢');
       startTalk(false);
     }
   }
@@ -417,8 +430,9 @@
   function onPlayerState(e) {
     if (!Engine.on) return;
     if (e.data === 'error') {
-      // שגיאה 150/101 = בעל הערוץ חוסם ניגון מחוץ ליוטיוב. חוסמים את הסרטון לתמיד וממשיכים.
-      if (Engine.current) blockVideo(Engine.current.videoId);
+      // 100/101/150 = הסרטון חסום/נמחק — חוסמים לתמיד. שגיאות אחרות (רשת וכו') הן זמניות — רק מדלגים.
+      const fatal = e.code === 100 || e.code === 101 || e.code === 150;
+      if (fatal && Engine.current) blockVideo(Engine.current.videoId);
       Engine.errorStreak++;
       if (Engine.errorStreak >= 8) {
         status('לא הצלחתי לנגן — נראה שהערוצים האלה חוסמים ניגון מחוץ ליוטיוב 😢 נסי ערוצים אחרים');
@@ -493,12 +507,28 @@
     if (!keepStatus) status('');
   }
 
+  // דילוג רגיל — רק להפעם. המיקום נשמר, והסרטון עדיין יכול לחזור בעתיד.
   function skip() {
     if (!Engine.on) return;
-    // דילוג ידני = שמעת מספיק — לא נציע את הסרטון הזה שוב
-    if (Engine.current) markHeard(Engine.current.videoId);
     if (Engine.phase === 'talk') {
-      if (Engine.currentTalk) delete Engine.positions[Engine.currentTalk.videoId];
+      saveTalkPosition();
+      Engine.currentTalk = null;
+      return startTalk(true);
+    } else if (Engine.phase === 'song') {
+      return startSong(Engine.continuousMusic);
+    } else if (Engine.phase === 'news') {
+      return startTalk(false);
+    }
+  }
+
+  // "לא שוב" — הקטע הנוכחי לא יושמע יותר לעולם
+  function banCurrent() {
+    if (!Engine.on || !Engine.current) return;
+    markHeard(Engine.current.videoId);
+    delete Engine.positions[Engine.current.videoId];
+    savePositions();
+    status('לא נשמיע את זה שוב 🚫');
+    if (Engine.phase === 'talk') {
       Engine.currentTalk = null;
       return startTalk(true);
     } else if (Engine.phase === 'song') {
@@ -519,6 +549,16 @@
   Engine.powerOn = powerOn;
   Engine.powerOff = powerOff;
   Engine.skip = skip;
+  Engine.banNow = banCurrent;
+  Engine.resetBlocked = () => {
+    Engine.blocked = {};
+    localStorage.removeItem(BLOCKED_KEY);
+    Engine.errorStreak = 0;
+  };
+  Engine.resetHeard = () => {
+    Engine.heard = {};
+    localStorage.removeItem(HEARD_KEY);
+  };
   Engine.songNow = () => { if (Engine.on) startSong(false); };
   Engine.talkNow = () => { if (Engine.on) { saveTalkPosition(); startTalk(false); } };
   Engine.newsNow = () => { if (Engine.on) startNews(); };

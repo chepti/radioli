@@ -345,9 +345,12 @@
     }
   };
   $('btnSkip').onclick = () => Engine.skip();
+  $('btnBanNow').onclick = () => Engine.banNow();
   $('btnSongNow').onclick = () => Engine.songNow();
   $('btnTalkNow').onclick = () => Engine.talkNow();
   $('btnNewsNow').onclick = () => Engine.newsNow();
+  $('btnResetBlocked').onclick = () => { Engine.resetBlocked(); toast('החסימות אופסו — כל הסרטונים יקבלו צ\'אנס נוסף ✨'); };
+  $('btnResetHeard').onclick = () => { Engine.resetHeard(); toast('היסטוריית ההאזנה אופסה 🌀'); };
 
   // ---- מצב תצוגת וידאו: רגיל ← קטן ← האזנה בלבד ----
   const VIDEO_MODES = [

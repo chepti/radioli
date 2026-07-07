@@ -37,6 +37,7 @@
     <symbol id="i-back" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
     <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -158,6 +159,18 @@
             <button type="button" class="btn small" id="prevTransSound" title="השמעה">🔊</button>
           </span>
         </div>
+        <div class="setting-row">
+          <span>סרטונים שנחסמו בגלל שגיאות ניגון
+            <button type="button" class="help-dot" data-help="סרטונים שערוץ היוטיוב חוסם לניגון מחוץ ליוטיוב נחסמים אוטומטית. אם נראה שנחסם יותר מדי — אפשר לאפס ולתת להם צ'אנס נוסף.">?</button>
+          </span>
+          <button type="button" class="btn small" id="btnResetBlocked">איפוס</button>
+        </div>
+        <div class="setting-row">
+          <span>היסטוריית "כבר שמעתי"
+            <button type="button" class="help-dot" data-help="דיבורים שנשמעו ו'לא שוב' שסימנת. איפוס יאפשר לכל הסרטונים לחזור.">?</button>
+          </span>
+          <button type="button" class="btn small" id="btnResetHeard">איפוס</button>
+        </div>
         <div class="setting-row" id="rowLogout" hidden>
           <span id="logoutName"></span>
           <button type="button" class="btn small" id="btnLogout">התנתקות</button>
@@ -214,7 +227,8 @@
         <button class="btn small dark" id="btnSongNow"><svg class="ic"><use href="#i-music"/></svg> שיר</button>
         <button class="btn small dark" id="btnTalkNow"><svg class="ic"><use href="#i-mic"/></svg> דיבורים</button>
         <button class="btn small dark" id="btnNewsNow"><svg class="ic"><use href="#i-news"/></svg> חדשות</button>
-        <button type="button" class="help-dot" data-help="החלפה חד-פעמית: מנגן שיר / דיבורים / חדשות עכשיו, ואז לוח השידורים ממשיך כרגיל.">?</button>
+        <button class="btn small dark ban" id="btnBanNow" title="לא להשמיע את הקטע הזה שוב"><svg class="ic"><use href="#i-ban"/></svg> לא שוב</button>
+        <button type="button" class="help-dot" data-help="שיר / דיבורים / חדשות — החלפה חד-פעמית, ואז ממשיכים כרגיל. ⏭ מדלג רק להפעם. «לא שוב» חוסם את הקטע הנוכחי לתמיד.">?</button>
       </div>
       <p class="engine-status" id="engineStatus"></p>
     </div>

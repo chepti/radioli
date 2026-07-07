@@ -282,6 +282,7 @@ input, select { font-family: inherit; }
   color: #ffd9c7;
 }
 .btn.dark:hover { box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+.btn.dark.ban { color: #ffb3b3; }
 .btn:disabled { opacity: .5; transform: none; cursor: wait; }
 
 /* ===== טפסים ===== */
