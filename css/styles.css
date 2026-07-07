@@ -378,13 +378,31 @@ input, select { font-family: inherit; }
 
 .mood-item {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   background: var(--bg);
   border-radius: 16px;
   padding: 10px 14px;
 }
-.mood-item .m-name { flex: 1; }
+.mood-item .m-row1 { display: flex; align-items: center; gap: 8px; }
+.mood-item .m-name { flex: 1; font-weight: bold; }
+.m-recipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: .85rem;
+  color: var(--ink-soft);
+}
+.m-recipe-item { display: inline-flex; align-items: center; gap: 4px; }
+.m-recipe-item input[type="number"] {
+  width: 52px;
+  border: 1.5px solid var(--peach);
+  border-radius: 8px;
+  padding: 4px;
+  text-align: center;
+  background: #fff;
+}
+.m-recipe-item input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
 .mood-item .m-del { border: none; background: none; color: var(--ink-soft); opacity: .7; padding: 4px; }
 .mood-item .m-del:hover { opacity: 1; color: var(--accent-deep); }
 

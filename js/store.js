@@ -150,10 +150,15 @@
     },
 
     addMood(name, emoji) {
-      const m = { id: uid(), name, emoji: emoji || '🎧' };
+      const m = { id: uid(), name, emoji: emoji || '🎧', recipe: null };
       data.moods.push(m);
       persist();
       return m;
+    },
+    // נוסחת שידור למצב רוח: {talkMin, songs, news, announce}; null = לפי ההגדרות הכלליות
+    updateMoodRecipe(id, recipe) {
+      const m = data.moods.find(x => x.id === id);
+      if (m) { m.recipe = recipe; persist(); }
     },
     removeMood(id) {
       data.moods = data.moods.filter(m => m.id !== id);

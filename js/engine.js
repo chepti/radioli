@@ -61,6 +61,19 @@
 
   function status(msg) { Engine.ui.onStatus(msg || ''); }
 
+  // לוח השידורים בפועל: נוסחת מצב הרוח הפעיל, ואם אין — ההגדרות הכלליות
+  function sched() {
+    const s = Store.data.settings;
+    const mood = Store.data.moods.find(m => m.id === Store.data.activeMood);
+    const r = (mood && mood.recipe) || {};
+    return {
+      talkMin: r.talkMin != null ? r.talkMin : s.talkMinutes,   // 0 = בלי דיבורים (רק מוזיקה)
+      songs: r.songs != null ? r.songs : 1,                     // 0 = בלי שירים (רק דיבורים)
+      news: r.news != null ? r.news : s.newsEnabled,
+      announce: r.announce != null ? r.announce : s.announceHour,
+    };
+  }
+
   function setPhase(p) {
     Engine.phase = p;
     Engine.ui.onPhase(p);
@@ -115,7 +128,8 @@
     else if (m === 2) suffix = ' ושתי דקות';
     else suffix = ' ו' + minutesWords(m) + ' דקות';
     const part = t.h < 5 ? 'בלילה' : t.h < 12 ? 'בבוקר' : t.h < 17 ? 'אחר הצהריים' : t.h < 21 ? 'בערב' : 'בלילה';
-    return 'כאן רדיולי. השעה ' + h + suffix + ' ' + part + '.';
+    // "רדיו לי" בשתי מילים — כדי שהקריין יהגה בחולם (רדיו-לי) ולא בשורוק
+    return 'כאן רדיו לי. השעה ' + h + suffix + ' ' + part + '.';
   }
 
   // ---- ערכות צלילים ----
@@ -178,15 +192,35 @@
       || null;
   }
 
-  function speakTime() {
+  // קריינות איכותית דרך השרת (Google TTS) — מנוגנת ב-WebAudio כדי לעקוף חסימות ניגון אוטומטי
+  async function speakViaProxy(text) {
+    const res = await fetch(window.RADIOLI_PROXY + '?tts=' + encodeURIComponent(text));
+    if (!res.ok) throw new Error('tts ' + res.status);
+    const data = await res.arrayBuffer();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
+    const buf = await ctx.decodeAudioData(data);
+    return new Promise(resolve => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; try { ctx.close(); } catch (e) {} resolve(); } };
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.onended = finish;
+      src.start();
+      setTimeout(finish, buf.duration * 1000 + 2000);
+    });
+  }
+
+  // נפילה: קול עברי של המכשיר
+  function speakViaDevice(text) {
     return new Promise(async (resolve) => {
-      await chime();
       if (!('speechSynthesis' in window)) return resolve();
       const voices = await getVoicesAsync();
       const heVoice = pickHebrewVoice(voices);
       // אין קול עברי במכשיר — עדיף רק צליל מאשר הקראה מעוותת בקול לועזי
       if (!heVoice) return resolve();
-      const utter = new SpeechSynthesisUtterance(timePhrase());
+      const utter = new SpeechSynthesisUtterance(text);
       utter.voice = heVoice;
       utter.lang = heVoice.lang || 'he-IL';
       utter.rate = 1;
@@ -199,6 +233,17 @@
       speechSynthesis.cancel();
       speechSynthesis.speak(utter);
     });
+  }
+
+  async function speakTime() {
+    await chime();
+    const text = timePhrase();
+    try {
+      await speakViaProxy(text);
+    } catch (e) {
+      console.warn('proxy tts failed, falling back to device voice', e);
+      await speakViaDevice(text);
+    }
   }
 
   // ---- בחירת סרטונים ----
@@ -265,6 +310,7 @@
 
   // ---- מקטעים ----
   async function startTalk(forceNew) {
+    if (sched().talkMin === 0) return startSong(true); // נוסחת "רק שירים"
     const talkPool = await buildPool('talk');
     let v = null;
     let pos = 0;
@@ -289,7 +335,7 @@
     Engine.currentTalk = v;
     Engine.lastTalkChannel = v.channelTitle;
     setPhase('talk');
-    Engine.talkDeadline = Date.now() + Store.data.settings.talkMinutes * 60 * 1000;
+    Engine.talkDeadline = Date.now() + sched().talkMin * 60 * 1000;
     status('');
     playVideo(v, pos);
   }
@@ -341,15 +387,15 @@
   async function hourlyBreak() {
     Engine.lastBreakHour = ilTime().h;
     saveTalkPosition();
-    const s = Store.data.settings;
-    if (s.announceHour) {
+    const sc = sched();
+    if (sc.announce) {
       setPhase('announce');
       status('הכרזת שעה 🕰️');
       YTBridge.pause();
       await speakTime();
     }
     if (!Engine.on) return;
-    if (s.newsEnabled && Store.channelsFor('news').length) {
+    if (sc.news && Store.channelsFor('news').length) {
       await startNews();
     } else {
       await startTalk(false);
@@ -375,9 +421,15 @@
       return;
     }
 
-    // נגמר זמן הדיבורים → שיר
+    // נגמר זמן הדיבורים → שיר (או המשך דיבורים, לפי הנוסחה)
     if (Engine.phase === 'talk' && Date.now() > Engine.talkDeadline) {
+      const sc = sched();
+      if (sc.songs === 0) { // נוסחת "רק דיבורים"
+        Engine.talkDeadline = Date.now() + sc.talkMin * 60 * 1000;
+        return;
+      }
       Engine.talkDeadline = Infinity;
+      Engine.songsLeft = sc.songs;
       transition(() => startSong(false));
       return;
     }
@@ -393,7 +445,9 @@
         Engine.songDeadline = Date.now() + remaining * 1000 + 5000; // נותנים לו לסיים יפה
       } else {
         Engine.songDeadline = Infinity;
-        transition(() => Engine.continuousMusic ? startSong(true) : startTalk(false));
+        Engine.songsLeft = (Engine.songsLeft || 1) - 1;
+        transition(() => Engine.continuousMusic ? startSong(true)
+          : (Engine.songsLeft > 0 ? startSong(false) : startTalk(false)));
         return;
       }
     }
@@ -456,7 +510,9 @@
       // דיבורים שנשמעו עד הסוף לא חוזרים; שירים כן מותר לנגן שוב (רק דילוג חוסם אותם)
       if (Engine.phase !== 'song' && Engine.current) markHeard(Engine.current.videoId);
       if (Engine.phase === 'song') {
-        transition(() => Engine.continuousMusic ? startSong(true) : startTalk(false));
+        Engine.songsLeft = (Engine.songsLeft || 1) - 1;
+        transition(() => Engine.continuousMusic ? startSong(true)
+          : (Engine.songsLeft > 0 ? startSong(false) : startTalk(false)));
       } else if (Engine.phase === 'talk') {
         // הסרטון נגמר לפני הזמן — ממשיכים לסרטון דיבורים אחר
         if (Engine.currentTalk) delete Engine.positions[Engine.currentTalk.videoId];
@@ -486,13 +542,14 @@
     if ('speechSynthesis' in window) speechSynthesis.getVoices();
 
     status('הרדיו מתעורר… ✨');
-    if (Store.data.settings.announceHour) {
+    const sc = sched();
+    if (sc.announce) {
       setPhase('announce');
       await speakTime();
       if (!Engine.on) return;
     }
     const m = ilTime().m;
-    if (Store.data.settings.newsEnabled && m < 7 && Store.channelsFor('news').length) {
+    if (sc.news && m < 7 && Store.channelsFor('news').length) {
       Engine.lastBreakHour = ilTime().h;
       await startNews();
     } else {
@@ -564,9 +621,10 @@
     Engine.heard = {};
     localStorage.removeItem(HEARD_KEY);
   };
-  Engine.songNow = () => { if (Engine.on) startSong(false); };
+  Engine.songNow = () => { if (Engine.on) { Engine.songsLeft = 1; startSong(false); } };
   Engine.talkNow = () => { if (Engine.on) { saveTalkPosition(); startTalk(false); } };
   Engine.newsNow = () => { if (Engine.on) startNews(); };
   Engine.onMoodChanged = onMoodChanged;
   Engine.previewSound = (name) => playTheme(name);
+  Engine.sched = sched;
 })();

@@ -201,9 +201,13 @@
   function renderMoods() {
     const list = $('moodList');
     list.innerHTML = '';
+    const s = Store.data.settings;
     Store.data.moods.forEach(m => {
       const li = document.createElement('li');
       li.className = 'mood-item';
+
+      const row1 = document.createElement('div');
+      row1.className = 'm-row1';
       const emoji = document.createElement('span');
       emoji.textContent = m.emoji;
       const name = document.createElement('span');
@@ -213,7 +217,53 @@
       del.className = 'm-del';
       del.innerHTML = icon('trash');
       del.onclick = () => { if (confirm('למחוק את מצב הרוח "' + m.name + '"?')) Store.removeMood(m.id); };
-      li.append(emoji, name, del);
+      row1.append(emoji, name, del);
+      li.appendChild(row1);
+
+      // נוסחת השידור של מצב הרוח
+      const r = m.recipe || {};
+      const recipe = document.createElement('div');
+      recipe.className = 'm-recipe';
+
+      const mkNum = (label, val, max, onChange) => {
+        const wrap = document.createElement('label');
+        wrap.className = 'm-recipe-item';
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.min = 0; inp.max = max;
+        inp.value = val;
+        inp.onchange = () => onChange(Math.max(0, Math.min(max, +inp.value || 0)));
+        wrap.append(document.createTextNode(label + ' '), inp);
+        return wrap;
+      };
+      const mkChk = (label, val, onChange) => {
+        const wrap = document.createElement('label');
+        wrap.className = 'm-recipe-item';
+        const inp = document.createElement('input');
+        inp.type = 'checkbox';
+        inp.checked = val;
+        inp.onchange = () => onChange(inp.checked);
+        wrap.append(inp, document.createTextNode(' ' + label));
+        return wrap;
+      };
+      const save = (patch) => {
+        const cur = Object.assign({
+          talkMin: r.talkMin != null ? r.talkMin : s.talkMinutes,
+          songs: r.songs != null ? r.songs : 1,
+          news: r.news != null ? r.news : s.newsEnabled,
+          announce: r.announce != null ? r.announce : s.announceHour,
+        }, patch);
+        Store.updateMoodRecipe(m.id, cur);
+      };
+
+      recipe.append(
+        mkNum('🗣️ דק\'', r.talkMin != null ? r.talkMin : s.talkMinutes, 90, v => save({ talkMin: v })),
+        mkNum('🎵 שירים', r.songs != null ? r.songs : 1, 20, v => save({ songs: v })),
+        mkChk('📰', r.news != null ? r.news : s.newsEnabled, v => save({ news: v })),
+        mkChk('🕰️', r.announce != null ? r.announce : s.announceHour, v => save({ announce: v })),
+      );
+      li.appendChild(recipe);
+
       list.appendChild(li);
     });
   }

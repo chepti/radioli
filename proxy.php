@@ -52,6 +52,20 @@ if (isset($_GET['feed'])) {
     exit;
 }
 
+// ---- קריינות (Google Translate TTS, עברית) ----
+// proxy.php?tts=<טקסט>  ->  audio/mpeg
+if (isset($_GET['tts'])) {
+    $q = trim($_GET['tts']);
+    if ($q === '' || mb_strlen($q) > 200) fail('bad tts text');
+    $url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=iw&q=' . rawurlencode($q);
+    $body = fetch_url($url);
+    if ($body === null) fail('tts failed', 502);
+    header('Content-Type: audio/mpeg');
+    header('Cache-Control: public, max-age=86400');
+    echo $body;
+    exit;
+}
+
 // ---- זיהוי שורטס ----
 // proxy.php?shorts=id1,id2,...  ->  {"id1":true,"id2":false}
 // שורט: /shorts/{id} מחזיר 200. סרטון רגיל: הפניה (3xx) ל-watch.
