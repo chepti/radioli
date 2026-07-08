@@ -521,7 +521,35 @@
   renderChannels();
   Store.initFirebase(() => renderAccount());
 
+  // ---- עדכון אוטומטי: PWA מותקנת נוטה "להיתקע" על גרסה ישנה בזיכרון המכשיר.
+  // כשמתגלה גרסה חדשה, מרעננים אוטומטית — אבל רק כשלא מאזינים כרגע (לא לקטוע שידור).
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(e => console.warn('sw failed', e));
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      const applyWhenSafe = () => {
+        if (!Engine.on) { location.reload(); return; }
+        toast('גרסה חדשה של רדיולי מוכנה — תתעדכן ברגע שהרדיו ייכבה ✨', 5000);
+        const iv = setInterval(() => {
+          if (!Engine.on) { clearInterval(iv); location.reload(); }
+        }, 10000);
+      };
+      if (reg.waiting && navigator.serviceWorker.controller) applyWhenSafe();
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) applyWhenSafe();
+        });
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    }).catch(e => console.warn('sw failed', e));
+
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (reloading) return;
+      reloading = true;
+      location.reload();
+    });
   }
 })();

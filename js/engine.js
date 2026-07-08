@@ -23,7 +23,7 @@
     paused: false,        // השהיה יזומה של המשתמש
     pausedAt: 0,
     programDeadline: 0,
-    lastProgramFire: '',  // מפתח ייחודי לתוכנית שכבר הופעלה (למנוע כפילות)
+    lastProgramFire: {},  // {id@יום: true} — תוכניות שכבר הופעלו היום (למנוע כפילות)
     tickTimer: null,
     ui: { onPhase() {}, onTrack() {}, onStatus() {}, onPaused() {} },
   };
@@ -431,31 +431,39 @@
     try { await fn(); } finally { Engine.switching = false; }
   }
 
-  // תוכנית קבועה שהגיע זמנה?
+  // תוכנית קבועה שהגיע זמנה? חלון של עד 10 דקות איחור —
+  // כדי לתפוס תוכניות גם אם הדפדפן האט/השהה את הטיימר (למשל מסך נעול) בדיוק בדקה המדויקת.
+  const PROGRAM_GRACE_MIN = 10;
   function dueProgram(now, dayKey) {
     const progs = Store.data.programs || [];
+    const nowMin = now.h * 60 + now.m;
     for (const p of progs) {
-      if (p.hour !== now.h || p.minute !== now.m) continue;
       if (p.days && p.days.length && !p.days.includes(new Date().getDay())) continue;
-      const fireKey = p.id + '@' + dayKey + ' ' + now.h + ':' + now.m;
-      if (Engine.lastProgramFire === fireKey) continue;
-      Engine.lastProgramFire = fireKey;
+      let diff = nowMin - (p.hour * 60 + p.minute);
+      if (diff < 0) diff += 24 * 60; // מעבר חצות
+      if (diff > PROGRAM_GRACE_MIN) continue;
+      const fireKey = p.id + '@' + dayKey;
+      if (Engine.lastProgramFire[fireKey]) continue;
+      Engine.lastProgramFire[fireKey] = true;
       return p;
     }
     return null;
   }
 
   function tick() {
-    if (!Engine.on || Engine.switching || Engine.paused) return;
+    if (!Engine.on || Engine.switching) return;
     const now = ilTime();
     const dayKey = new Date().toDateString();
 
-    // תוכנית קבועה (שידור חי) — גובר על הכול
+    // תוכנית קבועה (שידור חי) — גוברת על הכול, גם אם הרדיו בהשהיה
     const prog = dueProgram(now, dayKey);
     if (prog) {
+      if (Engine.paused) { Engine.paused = false; Engine.ui.onPaused(false); }
       transition(() => startLiveProgram(prog));
       return;
     }
+
+    if (Engine.paused) return; // שאר הלוח קפוא בהשהיה
 
     // שידור חי חורג מהזמן שהוקצב → חוזרים ללוח הרגיל
     if (Engine.phase === 'live' && Engine.programDeadline !== Infinity && Date.now() > Engine.programDeadline) {
